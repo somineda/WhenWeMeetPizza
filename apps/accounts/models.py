@@ -23,10 +23,11 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
-#커스텀유저 
+#커스텀유저
 class User(AbstractUser):
     username = None
     email = models.EmailField(unique=True, db_index=True)
+    nickname = models.CharField(max_length=50, blank=False, default='익명')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
