@@ -7,10 +7,6 @@ from .serializers import UserRegistrationSerializer, UserSerializer, LoginSerial
 
 
 class RegisterView(generics.CreateAPIView):
-    """
-    POST /api/v1/auth/register/
-    User registration endpoint
-    """
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
 
@@ -19,7 +15,7 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Generate JWT tokens
+        #jwt 토큰 설정
         refresh = RefreshToken.for_user(user)
 
         return Response({
@@ -31,11 +27,7 @@ class RegisterView(generics.CreateAPIView):
         }, status=status.HTTP_201_CREATED)
 
 
-class LoginView(generics.GenericAPIView):
-    """
-    POST /api/v1/auth/login/
-    User login endpoint
-    """
+class LoginView(generics.GenericAPIView): #로그인뷰
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
 
@@ -58,7 +50,7 @@ class LoginView(generics.GenericAPIView):
                 'detail': 'User account is disabled'
             }, status=status.HTTP_403_FORBIDDEN)
 
-        # Generate JWT tokens
+        #JWT 토큰
         refresh = RefreshToken.for_user(user)
 
         return Response({
@@ -71,10 +63,7 @@ class LoginView(generics.GenericAPIView):
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):
-    """
-    GET /api/v1/auth/profile/ - Get user profile
-    PATCH /api/v1/auth/profile/ - Update user profile
-    """
+
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
 

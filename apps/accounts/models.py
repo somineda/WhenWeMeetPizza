@@ -3,8 +3,6 @@ from django.db import models
 
 
 class UserManager(BaseUserManager):
-    """Custom user manager"""
-
     def create_user(self, email, password=None, **extra_fields):
         if not email:
             raise ValueError('Email is required')
@@ -25,9 +23,8 @@ class UserManager(BaseUserManager):
 
         return self.create_user(email, password, **extra_fields)
 
-
+#커스텀유저 
 class User(AbstractUser):
-    """Custom user model with email as username"""
     username = None
     email = models.EmailField(unique=True, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
