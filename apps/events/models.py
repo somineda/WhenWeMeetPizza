@@ -9,6 +9,15 @@ class Event(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='created_events', null=True, blank=True)
+
+    # Date/Time range fields
+    date_start = models.DateField(null=True, blank=True)
+    date_end = models.DateField(null=True, blank=True)
+    time_start = models.TimeField(null=True, blank=True)
+    time_end = models.TimeField(null=True, blank=True)
+    timezone = models.CharField(max_length=50, default='Asia/Seoul')
+    deadline_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -25,3 +34,19 @@ class Event(models.Model):
         verbose_name = 'Event'
         verbose_name_plural = 'Events'
         ordering = ['-created_at']
+
+
+class TimeSlot(models.Model):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name='time_slots')
+    start_datetime = models.DateTimeField()
+    end_datetime = models.DateTimeField()
+
+    def __str__(self):
+        return f"{self.event.title}: {self.start_datetime} - {self.end_datetime}"
+
+    class Meta:
+        db_table = 'time_slots'
+        verbose_name = 'Time Slot'
+        verbose_name_plural = 'Time Slots'
+        ordering = ['start_datetime']
+        unique_together = ['event', 'start_datetime']

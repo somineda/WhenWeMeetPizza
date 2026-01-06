@@ -5,6 +5,10 @@ import json
 AUTH_BASE_URL = "http://127.0.0.1:8000/api/v1/auth"
 EVENTS_BASE_URL = "http://127.0.0.1:8000/api/v1/events"
 
+print("=" * 50)
+print("EVENT CREATION API TESTS")
+print("=" * 50)
+
 # Test 1: Register with Nickname
 print("=" * 50)
 print("Testing Registration with Nickname...")
@@ -66,12 +70,82 @@ if response.status_code == 200:
     access_token = response.json()['tokens']['access']
 
 # ============================================================
+# Event Creation Tests
+# ============================================================
+
+# Test Event-1: Create Event (Authenticated)
+if access_token:
+    print("\n" + "=" * 50)
+    print("Testing Create Event (Authenticated)...")
+    print("=" * 50)
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "title": "12월 피자모임",
+            "description": "12월 피자모임은 언제 하나요?",
+            "date_start": "2025-12-25",
+            "date_end": "2025-12-30",
+            "time_start": "09:00",
+            "time_end": "23:00",
+            "timezone": "Asia/Seoul",
+            "deadline_at": "2025-12-30T23:59:00+09:00"
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+    created_event_slug = None
+    if response.status_code == 201:
+        created_event_slug = response.json().get('slug')
+        print(f"✓ Event created with slug: {created_event_slug}")
+
+# Test Event-2: Create Event without auth (should fail)
+print("\n" + "=" * 50)
+print("Testing Create Event without Auth (should fail)...")
+print("=" * 50)
+response = requests.post(
+    f"{EVENTS_BASE_URL}/",
+    json={
+        "title": "Unauthorized Event",
+        "date_start": "2025-12-25",
+        "date_end": "2025-12-30",
+        "time_start": "09:00",
+        "time_end": "23:00",
+        "timezone": "Asia/Seoul",
+        "deadline_at": "2025-12-30T23:59:00+09:00"
+    }
+)
+print(f"Status: {response.status_code}")
+print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+
+# Test Event-3: Create Event with invalid dates (end before start)
+if access_token:
+    print("\n" + "=" * 50)
+    print("Testing Create Event with invalid dates (should fail)...")
+    print("=" * 50)
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "title": "Invalid Date Event",
+            "date_start": "2025-12-30",
+            "date_end": "2025-12-25",  # End before start
+            "time_start": "09:00",
+            "time_end": "23:00",
+            "timezone": "Asia/Seoul",
+            "deadline_at": "2025-12-30T23:59:00+09:00"
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# ============================================================
 # Phase 3: Event Participation Tests
 # ============================================================
 
-# Note: You need to create an event first via admin panel or Django shell
-# For testing, we'll use a sample slug. Replace with actual event slug.
-TEST_EVENT_SLUG = "test-event-12345678"
+# Use the created event slug from Event Creation test
+TEST_EVENT_SLUG = created_event_slug if created_event_slug else "test-event-12345678"
+print(f"\nUsing event slug for participation tests: {TEST_EVENT_SLUG}")
 
 # Test 5: Join Event as Anonymous User without email (should fail)
 print("\n" + "=" * 50)
