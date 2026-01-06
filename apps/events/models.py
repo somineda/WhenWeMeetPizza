@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 from django.utils.text import slugify
 import uuid
 
@@ -7,6 +8,7 @@ class Event(models.Model):
     slug = models.SlugField(unique=True, max_length=255, db_index=True)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='created_events', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -1,10 +1,12 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from apps.events.models import Event
 from .models import Participant
-from .serializers import ParticipantSerializer
+from .serializers import ParticipantSerializer, ParticipantListSerializer
+from .pagination import ParticipantPagination
 
 
 class ParticipantCreateView(generics.CreateAPIView):
@@ -33,3 +35,29 @@ class ParticipantCreateView(generics.CreateAPIView):
         participant = serializer.save()
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class ParticipantListView(generics.ListAPIView):
+    serializer_class = ParticipantListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = ParticipantPagination
+
+    def get_queryset(self):
+        event_id = self.kwargs.get('event_id')
+        return Participant.objects.filter(event_id=event_id).order_by('-created_at')
+
+
+class ParticipantDeleteView(generics.DestroyAPIView):
+    queryset = Participant.objects.all()
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
+
+    def destroy(self, request, *args, **kwargs):
+        participant = self.get_object()
+
+        # 권한 체크: 본인만 삭제 가능
+        if participant.user != request.user:
+            raise PermissionDenied("이 참가자를 삭제할 권한이 없습니다.")
+
+        participant.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

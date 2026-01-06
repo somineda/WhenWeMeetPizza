@@ -2,6 +2,13 @@ from rest_framework import serializers
 from .models import Participant
 
 
+class ParticipantListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Participant
+        fields = ['id', 'nickname', 'email', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+
+
 class ParticipantSerializer(serializers.ModelSerializer):
     event_id = serializers.IntegerField(source='event.id', read_only=True)
     participant_id = serializers.IntegerField(source='id', read_only=True)
