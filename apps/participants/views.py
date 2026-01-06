@@ -23,13 +23,45 @@ class ParticipantCreateView(generics.CreateAPIView):
                 'detail': 'empty_fields'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        # 닉네임 중복 체크
         nickname = request.data['nickname'].strip()
-        if Participant.objects.filter(event=event, nickname=nickname).exists():
+        email = request.data.get('email', '').strip() if request.data.get('email') else None
+
+        # 익명 참가(비로그인) 시 이메일 필수
+        if not request.user.is_authenticated and not email:
+            return Response({
+                'detail': 'email_required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # 로그인한 사용자가 이메일과 함께 참가하는 경우
+        # 같은 이벤트에서 같은 이메일을 가진 익명 참가자가 있으면 자동 연결
+        existing_participant = None
+        if request.user.is_authenticated and email:
+            existing_participant = Participant.objects.filter(
+                event=event,
+                email=email,
+                user__isnull=True
+            ).first()
+
+        # 닉네임 중복 체크 (기존 익명 참가자를 업데이트하는 경우 제외)
+        nickname_query = Participant.objects.filter(event=event, nickname=nickname)
+        if existing_participant:
+            nickname_query = nickname_query.exclude(id=existing_participant.id)
+
+        if nickname_query.exists():
             return Response({
                 'detail': '이미 존재하는 닉네임입니다.'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        # 기존 익명 참가자가 있으면 업데이트 (계정 연결)
+        if existing_participant:
+            existing_participant.user = request.user
+            existing_participant.nickname = nickname
+            existing_participant.save()
+
+            serializer = self.get_serializer(existing_participant)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        # 새로운 참가자 생성
         serializer = self.get_serializer(data=request.data, context={'request': request, 'event': event})
         serializer.is_valid(raise_exception=True)
         participant = serializer.save()

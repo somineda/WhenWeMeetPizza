@@ -73,15 +73,29 @@ if response.status_code == 200:
 # For testing, we'll use a sample slug. Replace with actual event slug.
 TEST_EVENT_SLUG = "test-event-12345678"
 
-# Test 5: Join Event as Anonymous User (without auth)
+# Test 5: Join Event as Anonymous User without email (should fail)
 print("\n" + "=" * 50)
-print("Testing Join Event (Anonymous)...")
+print("Testing Join Event (Anonymous without email - should fail)...")
 print("=" * 50)
 response = requests.post(
     f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/participants/",
     json={
-        "nickname": "여우리더",
-        "email": "me@example.com"
+        "nickname": "여우리더"
+    }
+)
+print(f"Status: {response.status_code}")
+print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 5-2: Join Event as Anonymous User with email
+print("\n" + "=" * 50)
+print("Testing Join Event (Anonymous with email)...")
+print("=" * 50)
+ANONYMOUS_EMAIL = "anonymous@example.com"
+response = requests.post(
+    f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/participants/",
+    json={
+        "nickname": "익명여우리더",
+        "email": ANONYMOUS_EMAIL
     }
 )
 print(f"Status: {response.status_code}")
@@ -97,31 +111,50 @@ print("=" * 50)
 response = requests.post(
     f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/participants/",
     json={
-        "nickname": "여우리더",
+        "nickname": "익명여우리더",  # Same as Test 5-2
         "email": "another@example.com"
     }
 )
 print(f"Status: {response.status_code}")
 print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
 
-# Test 7: Join Event as Logged-in User
+# Test 7: Join Event as Logged-in User with same email (auto-link test)
 logged_in_participant_id = None
 if access_token:
     print("\n" + "=" * 50)
-    print("Testing Join Event (Authenticated)...")
+    print("Testing Join Event (Authenticated with same email - auto-link)...")
     print("=" * 50)
     response = requests.post(
         f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/participants/",
         headers={"Authorization": f"Bearer {access_token}"},
         json={
-            "nickname": "로그인유저닉네임",
-            "email": "loggeduser@example.com"
+            "nickname": "로그인후연결된닉네임",
+            "email": ANONYMOUS_EMAIL  # Same email as anonymous participant
         }
     )
     print(f"Status: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
     if response.status_code == 200:
         logged_in_participant_id = response.json().get('participant_id')
+        # Check if it's the same participant_id as anonymous one (auto-linked)
+        if logged_in_participant_id == anonymous_participant_id:
+            print("✓ Successfully auto-linked to existing anonymous participant!")
+
+# Test 7-2: Join Event as Logged-in User with different email
+if access_token:
+    print("\n" + "=" * 50)
+    print("Testing Join Event (Authenticated with different email)...")
+    print("=" * 50)
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/participants/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "nickname": "새로운참가자",
+            "email": "newuser@example.com"
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
 
 # Test 8: Join Event with Empty Nickname (should fail)
 print("\n" + "=" * 50)
@@ -173,11 +206,12 @@ response = requests.get(
 print(f"Status: {response.status_code}")
 print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
 
-# Test 12: Delete Participant (본인 삭제)
+# Test 12: Delete Participant (Auto-linked participant - should succeed)
 if access_token and logged_in_participant_id:
     print("\n" + "=" * 50)
-    print("Testing Delete Participant (Self)...")
+    print("Testing Delete Auto-linked Participant (Self)...")
     print("=" * 50)
+    print(f"Attempting to delete participant_id: {logged_in_participant_id}")
     response = requests.delete(
         f"http://127.0.0.1:8000/api/v1/participants/{logged_in_participant_id}",
         headers={"Authorization": f"Bearer {access_token}"}
@@ -185,28 +219,46 @@ if access_token and logged_in_participant_id:
     print(f"Status: {response.status_code}")
     if response.status_code == 204:
         print("Response: Successfully deleted (204 No Content)")
+        print("✓ Auto-linked participant can be deleted by the user!")
     else:
         print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
 
-# Test 13: Delete Participant without Authentication (should fail)
-if anonymous_participant_id:
+# Test 13: Create another anonymous participant for deletion tests
+print("\n" + "=" * 50)
+print("Creating another anonymous participant for deletion tests...")
+print("=" * 50)
+response = requests.post(
+    f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/participants/",
+    json={
+        "nickname": "또다른익명참가자",
+        "email": "another-anonymous@example.com"
+    }
+)
+print(f"Status: {response.status_code}")
+print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+another_anonymous_id = None
+if response.status_code == 200:
+    another_anonymous_id = response.json().get('participant_id')
+
+# Test 14: Delete Participant without Authentication (should fail)
+if another_anonymous_id:
     print("\n" + "=" * 50)
     print("Testing Delete Participant without Auth (should fail)...")
     print("=" * 50)
     response = requests.delete(
-        f"http://127.0.0.1:8000/api/v1/participants/{anonymous_participant_id}"
+        f"http://127.0.0.1:8000/api/v1/participants/{another_anonymous_id}"
     )
     print(f"Status: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
 
-# Test 14: Try to delete other's participant without permission (should fail)
-if access_token and anonymous_participant_id:
+# Test 15: Try to delete other's participant without permission (should fail)
+if access_token and another_anonymous_id:
     print("\n" + "=" * 50)
     print("Testing Delete Other's Participant without Permission (should fail)...")
     print("=" * 50)
-    # 익명 참가자를 삭제하려고 시도 (권한 없음)
+    # 다른 익명 참가자를 삭제하려고 시도 (권한 없음 - user가 None이므로)
     response = requests.delete(
-        f"http://127.0.0.1:8000/api/v1/participants/{anonymous_participant_id}",
+        f"http://127.0.0.1:8000/api/v1/participants/{another_anonymous_id}",
         headers={"Authorization": f"Bearer {access_token}"}
     )
     print(f"Status: {response.status_code}")
