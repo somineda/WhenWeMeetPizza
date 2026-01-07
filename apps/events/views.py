@@ -3,7 +3,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.shortcuts import get_object_or_404
 from .models import Event
-from .serializers import EventSerializer, EventDetailSerializer
+from .serializers import EventSerializer, EventDetailSerializer, MyEventListSerializer
+from .pagination import EventPagination
 
 
 class EventCreateView(generics.CreateAPIView):
@@ -31,3 +32,12 @@ class EventDetailView(generics.RetrieveAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class MyEventListView(generics.ListAPIView):
+    serializer_class = MyEventListSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = EventPagination
+
+    def get_queryset(self):
+        return Event.objects.filter(created_by=self.request.user).order_by('-created_at')

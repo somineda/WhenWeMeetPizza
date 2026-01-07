@@ -166,3 +166,18 @@ class EventDetailSerializer(serializers.ModelSerializer):
             many=True,
             context={'total_participants': total_participants}
         ).data
+
+
+class MyEventListSerializer(serializers.ModelSerializer):
+    participant_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Event
+        fields = [
+            'id', 'slug', 'title',
+            'date_start', 'date_end', 'deadline_at',
+            'participant_count', 'created_at'
+        ]
+
+    def get_participant_count(self, obj):
+        return obj.participants.count()

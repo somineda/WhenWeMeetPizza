@@ -522,3 +522,39 @@ if test_participant_id and time_slots:
             print(f"First 5 slots with available_count:")
             for slot in event_data.get('slots', [])[:5]:
                 print(f"  Slot {slot['slot_id']} ({slot['date']} {slot['start_time']}-{slot['end_time']}): {slot['available_count']}/{slot['total_participants']} available")
+
+# ============================================================
+# Phase 6: My Events List API Tests
+# ============================================================
+
+# Test 26: Get My Events (Authenticated)
+if access_token:
+    print("\n" + "=" * 50)
+    print("Testing Get My Events (Authenticated)...")
+    print("=" * 50)
+    response = requests.get(
+        f"{EVENTS_BASE_URL}/my/",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 27: Get My Events with Pagination
+if access_token:
+    print("\n" + "=" * 50)
+    print("Testing Get My Events with Pagination...")
+    print("=" * 50)
+    response = requests.get(
+        f"{EVENTS_BASE_URL}/my/?page=1&size=5",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 28: Get My Events without Auth (should fail)
+print("\n" + "=" * 50)
+print("Testing Get My Events without Auth (should fail)...")
+print("=" * 50)
+response = requests.get(f"{EVENTS_BASE_URL}/my/")
+print(f"Status: {response.status_code}")
+print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
