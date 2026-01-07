@@ -5,7 +5,7 @@ from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from apps.events.models import Event
 from .models import Participant
-from .serializers import ParticipantSerializer, ParticipantListSerializer
+from .serializers import ParticipantSerializer, ParticipantListSerializer, SubmitAvailabilitySerializer
 from .pagination import ParticipantPagination
 
 
@@ -93,3 +93,27 @@ class ParticipantDeleteView(generics.DestroyAPIView):
 
         participant.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class SubmitAvailabilityView(generics.CreateAPIView):
+    serializer_class = SubmitAvailabilitySerializer
+    permission_classes = [AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        participant_id = self.kwargs.get('participant_id')
+        participant = get_object_or_404(Participant, id=participant_id)
+
+        # 권한 체크: 로그인한 사용자는 본인의 참가자만, 익명은 누구나 가능
+        if request.user.is_authenticated:
+            # 로그인한 경우, 본인의 참가자인지 확인
+            if participant.user and participant.user != request.user:
+                raise PermissionDenied("이 참가자의 가능 시간을 제출할 권한이 없습니다.")
+
+        serializer = self.get_serializer(
+            data=request.data,
+            context={'participant': participant, 'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        result = serializer.save()
+
+        return Response(result, status=status.HTTP_200_OK)

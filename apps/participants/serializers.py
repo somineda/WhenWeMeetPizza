@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Participant
+from .models import Participant, ParticipantAvailability
+from apps.events.models import TimeSlot
 
 
 class ParticipantListSerializer(serializers.ModelSerializer):
@@ -40,3 +41,53 @@ class ParticipantSerializer(serializers.ModelSerializer):
             if 'unique_event_nickname' in str(e).lower() or 'duplicate' in str(e).lower():
                 raise serializers.ValidationError({"detail": "이미 존재하는 닉네임입니다."})
             raise
+
+
+class SubmitAvailabilitySerializer(serializers.Serializer):
+    available_slot_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=True,
+        help_text="참여 가능한 타임슬롯 ID 리스트"
+    )
+
+    def validate_available_slot_ids(self, value):
+        participant = self.context.get('participant')
+        if not participant:
+            raise serializers.ValidationError("참가자 정보가 필요합니다.")
+
+        # 해당 이벤트의 타임슬롯인지 확인
+        event_slot_ids = set(participant.event.time_slots.values_list('id', flat=True))
+        invalid_slots = set(value) - event_slot_ids
+
+        if invalid_slots:
+            raise serializers.ValidationError(
+                f"유효하지 않은 타임슬롯 ID: {list(invalid_slots)}"
+            )
+
+        return value
+
+    def save(self):
+        participant = self.context.get('participant')
+        available_slot_ids = self.validated_data['available_slot_ids']
+
+        # 기존 availabilities 모두 삭제
+        ParticipantAvailability.objects.filter(participant=participant).delete()
+
+        # 새로운 availabilities 생성
+        availabilities = [
+            ParticipantAvailability(
+                participant=participant,
+                time_slot_id=slot_id,
+                is_available=True
+            )
+            for slot_id in available_slot_ids
+        ]
+
+        ParticipantAvailability.objects.bulk_create(availabilities)
+
+        return {
+            'participant_id': participant.id,
+            'event_id': participant.event.id,
+            'submitted_count': len(available_slot_ids),
+            'available_slot_ids': available_slot_ids
+        }

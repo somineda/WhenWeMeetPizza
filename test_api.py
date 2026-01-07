@@ -373,3 +373,152 @@ response = requests.get(
 )
 print(f"Status: {response.status_code}")
 print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+
+# ============================================================
+# Phase 5: Submit Availability API Tests
+# ============================================================
+
+# Test 19: Get time slots from event detail
+print("\n" + "=" * 50)
+print("Getting time slots from event detail...")
+print("=" * 50)
+response = requests.get(f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/")
+time_slots = []
+test_participant_id = None
+
+if response.status_code == 200:
+    event_data = response.json()
+    time_slots = event_data.get('slots', [])
+    print(f"Total time slots: {len(time_slots)}")
+    if time_slots:
+        print(f"First slot: {time_slots[0]}")
+        print(f"Last slot: {time_slots[-1]}")
+
+# Test 20: Create a new participant for availability tests
+print("\n" + "=" * 50)
+print("Creating a participant for availability tests...")
+print("=" * 50)
+response = requests.post(
+    f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/participants/",
+    json={
+        "nickname": "가능시간제출테스트참가자",
+        "email": "availability-test@example.com"
+    }
+)
+print(f"Status: {response.status_code}")
+print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+if response.status_code == 200:
+    test_participant_id = response.json().get('participant_id')
+    print(f"Created participant_id: {test_participant_id}")
+
+# Test 21: Submit availability for participant (select first 5 slots)
+if test_participant_id and time_slots:
+    print("\n" + "=" * 50)
+    print("Testing Submit Availability (first 5 slots)...")
+    print("=" * 50)
+    available_slot_ids = [slot['slot_id'] for slot in time_slots[:5]]
+    print(f"Submitting slots: {available_slot_ids}")
+
+    response = requests.post(
+        f"http://127.0.0.1:8000/api/v1/participants/{test_participant_id}/availabilities/",
+        json={
+            "available_slot_ids": available_slot_ids
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 22: Update availability (change to different slots)
+if test_participant_id and time_slots and len(time_slots) >= 10:
+    print("\n" + "=" * 50)
+    print("Testing Update Availability (different slots)...")
+    print("=" * 50)
+    available_slot_ids = [slot['slot_id'] for slot in time_slots[5:10]]
+    print(f"Updating to slots: {available_slot_ids}")
+
+    response = requests.post(
+        f"http://127.0.0.1:8000/api/v1/participants/{test_participant_id}/availabilities/",
+        json={
+            "available_slot_ids": available_slot_ids
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 23: Submit empty availability (clear all)
+if test_participant_id:
+    print("\n" + "=" * 50)
+    print("Testing Submit Empty Availability (clear all)...")
+    print("=" * 50)
+
+    response = requests.post(
+        f"http://127.0.0.1:8000/api/v1/participants/{test_participant_id}/availabilities/",
+        json={
+            "available_slot_ids": []
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 24: Submit availability with invalid slot IDs (should fail)
+if test_participant_id:
+    print("\n" + "=" * 50)
+    print("Testing Submit Availability with Invalid Slot IDs (should fail)...")
+    print("=" * 50)
+
+    response = requests.post(
+        f"http://127.0.0.1:8000/api/v1/participants/{test_participant_id}/availabilities/",
+        json={
+            "available_slot_ids": [99999, 88888]  # Invalid slot IDs
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 25: Verify event detail shows updated available_count
+if test_participant_id and time_slots:
+    print("\n" + "=" * 50)
+    print("Submitting availability for multiple participants...")
+    print("=" * 50)
+
+    # Create another participant
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/participants/",
+        json={
+            "nickname": "두번째참가자",
+            "email": "second-participant@example.com"
+        }
+    )
+    second_participant_id = None
+    if response.status_code == 200:
+        second_participant_id = response.json().get('participant_id')
+        print(f"Created second participant_id: {second_participant_id}")
+
+        # Submit availability for both participants (same slots)
+        same_slots = [slot['slot_id'] for slot in time_slots[:3]]
+
+        # First participant
+        requests.post(
+            f"http://127.0.0.1:8000/api/v1/participants/{test_participant_id}/availabilities/",
+            json={"available_slot_ids": same_slots}
+        )
+
+        # Second participant
+        requests.post(
+            f"http://127.0.0.1:8000/api/v1/participants/{second_participant_id}/availabilities/",
+            json={"available_slot_ids": same_slots}
+        )
+
+        print(f"Both participants submitted availability for slots: {same_slots}")
+
+        # Check event detail
+        print("\n" + "=" * 50)
+        print("Verifying Event Detail shows correct available_count...")
+        print("=" * 50)
+        response = requests.get(f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/")
+        if response.status_code == 200:
+            event_data = response.json()
+            print(f"Total participants: {event_data.get('participants_count')}")
+            print(f"First 5 slots with available_count:")
+            for slot in event_data.get('slots', [])[:5]:
+                print(f"  Slot {slot['slot_id']} ({slot['date']} {slot['start_time']}-{slot['end_time']}): {slot['available_count']}/{slot['total_participants']} available")
