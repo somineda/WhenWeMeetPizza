@@ -181,3 +181,36 @@ class MyEventListSerializer(serializers.ModelSerializer):
 
     def get_participant_count(self, obj):
         return obj.participants.count()
+
+
+class EventUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Event
+        fields = [
+            'id', 'slug', 'title', 'description',
+            'date_start', 'date_end', 'time_start', 'time_end',
+            'timezone', 'deadline_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'slug', 'updated_at']
+
+    def validate(self, attrs):
+        # 현재 인스턴스의 값을 가져와서 검증
+        instance = self.instance
+
+        # 날짜 유효성 검사
+        date_start = attrs.get('date_start', instance.date_start if instance else None)
+        date_end = attrs.get('date_end', instance.date_end if instance else None)
+
+        if date_end and date_start:
+            if date_end < date_start:
+                raise serializers.ValidationError("종료일이 시작일보다 먼저입니다")
+
+        # 시간 유효성 검사
+        time_start = attrs.get('time_start', instance.time_start if instance else None)
+        time_end = attrs.get('time_end', instance.time_end if instance else None)
+
+        if time_end and time_start:
+            if time_end <= time_start:
+                raise serializers.ValidationError("종료 시간이 시작 시간보다 먼저이거나 같습니다")
+
+        return attrs

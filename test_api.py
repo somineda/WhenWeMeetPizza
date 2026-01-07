@@ -558,3 +558,130 @@ print("=" * 50)
 response = requests.get(f"{EVENTS_BASE_URL}/my/")
 print(f"Status: {response.status_code}")
 print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+
+# ============================================================
+# Phase 7: Event Update API Tests
+# ============================================================
+
+# Get event_id from created event
+event_id_for_update = None
+if access_token and created_event_slug:
+    print("\n" + "=" * 50)
+    print("Getting event ID for update tests...")
+    print("=" * 50)
+    response = requests.get(f"{EVENTS_BASE_URL}/{created_event_slug}/")
+    if response.status_code == 200:
+        event_id_for_update = response.json().get('id')
+        print(f"Event ID: {event_id_for_update}")
+
+# Test 29: Update Event as Organizer (Full Update)
+if access_token and event_id_for_update:
+    print("\n" + "=" * 50)
+    print("Testing Update Event (Organizer - Full Update)...")
+    print("=" * 50)
+    response = requests.patch(
+        f"{EVENTS_BASE_URL}/{event_id_for_update}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "title": "1월 피자모임 (수정됨)",
+            "description": "마감기한과 일정이 변경되었습니다.",
+            "date_start": "2025-12-26",
+            "date_end": "2025-12-28",
+            "time_start": "10:00",
+            "time_end": "22:00",
+            "deadline_at": "2025-12-25T23:59:00+09:00"
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 30: Partial Update (Title and Description only)
+if access_token and event_id_for_update:
+    print("\n" + "=" * 50)
+    print("Testing Partial Update (Title and Description only)...")
+    print("=" * 50)
+    response = requests.patch(
+        f"{EVENTS_BASE_URL}/{event_id_for_update}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "title": "1월 신년 피자모임",
+            "description": "신년을 기념하는 피자모임입니다!"
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 31: Update with Invalid Dates (should fail)
+if access_token and event_id_for_update:
+    print("\n" + "=" * 50)
+    print("Testing Update with Invalid Dates (should fail)...")
+    print("=" * 50)
+    response = requests.patch(
+        f"{EVENTS_BASE_URL}/{event_id_for_update}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "date_start": "2025-12-30",
+            "date_end": "2025-12-25"  # End before start
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 32: Update without Authentication (should fail)
+if event_id_for_update:
+    print("\n" + "=" * 50)
+    print("Testing Update without Auth (should fail)...")
+    print("=" * 50)
+    response = requests.patch(
+        f"{EVENTS_BASE_URL}/{event_id_for_update}/",
+        json={
+            "title": "Unauthorized Update"
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+
+# Test 33: Create another user and try to update (should fail - not organizer)
+print("\n" + "=" * 50)
+print("Creating another user for permission test...")
+print("=" * 50)
+response = requests.post(
+    f"{AUTH_BASE_URL}/register/",
+    json={
+        "email": "anotheruser@example.com",
+        "password": "AnotherPass123!",
+        "password2": "AnotherPass123!",
+        "nickname": "다른유저"
+    }
+)
+another_user_token = None
+if response.status_code == 201:
+    another_user_token = response.json()['tokens']['access']
+    print("Another user created successfully")
+elif response.status_code == 400:
+    # User already exists, try to login
+    print("User already exists, logging in...")
+    response = requests.post(
+        f"{AUTH_BASE_URL}/login/",
+        json={
+            "email": "anotheruser@example.com",
+            "password": "AnotherPass123!"
+        }
+    )
+    if response.status_code == 200:
+        another_user_token = response.json()['tokens']['access']
+        print("Login successful")
+
+if another_user_token and event_id_for_update:
+    print("\n" + "=" * 50)
+    print("Testing Update as Non-Organizer (should fail)...")
+    print("=" * 50)
+    response = requests.patch(
+        f"{EVENTS_BASE_URL}/{event_id_for_update}/",
+        headers={"Authorization": f"Bearer {another_user_token}"},
+        json={
+            "title": "해킹 시도"
+        }
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")

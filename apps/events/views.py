@@ -1,9 +1,10 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from .models import Event
-from .serializers import EventSerializer, EventDetailSerializer, MyEventListSerializer
+from .serializers import EventSerializer, EventDetailSerializer, MyEventListSerializer, EventUpdateSerializer
 from .pagination import EventPagination
 
 
@@ -41,3 +42,24 @@ class MyEventListView(generics.ListAPIView):
 
     def get_queryset(self):
         return Event.objects.filter(created_by=self.request.user).order_by('-created_at')
+
+
+class EventUpdateView(generics.UpdateAPIView):
+    serializer_class = EventUpdateSerializer
+    permission_classes = [IsAuthenticated]
+    queryset = Event.objects.all()
+    lookup_field = 'pk'
+
+    def update(self, request, *args, **kwargs):
+        event = self.get_object()
+
+        # 권한 체크: 방장(created_by)만 수정 가능
+        if event.created_by != request.user:
+            raise PermissionDenied("수정 권한이 없습니다")
+
+        partial = kwargs.pop('partial', True)  # PATCH를 위해 partial=True
+        serializer = self.get_serializer(event, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
