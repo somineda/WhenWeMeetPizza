@@ -1061,3 +1061,175 @@ if summary_test_event_id:
 print("\n" + "=" * 50)
 print("ALL TESTS COMPLETED!")
 print("=" * 50)
+
+# ============================================================
+# Phase 10: Final Choice API Tests
+# ============================================================
+
+# Use summary_test_event_id and summary_time_slots from previous tests
+final_choice_event_id = summary_test_event_id
+final_choice_slots = summary_time_slots
+
+# Test 47: Create Final Choice as Organizer (should succeed)
+if access_token and final_choice_event_id and final_choice_slots:
+    print("\n" + "=" * 50)
+    print("Test 47: Create Final Choice as Organizer...")
+    print("=" * 50)
+    
+    # Pick the first slot as final choice
+    chosen_slot_id = final_choice_slots[0]['slot_id']
+    print(f"Choosing slot ID: {chosen_slot_id}")
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{final_choice_event_id}/final-choice",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"slot_id": chosen_slot_id}
+    )
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Response: {json.dumps(data, indent=2, ensure_ascii=False)}")
+        print(f"✓ Final choice created successfully")
+        print(f"  Event ID: {data.get('event_id')}")
+        print(f"  Slot ID: {data.get('slot_id')}")
+        print(f"  Date: {data.get('date')}")
+        print(f"  Time: {data.get('start_time')} - {data.get('end_time')}")
+        print(f"  Chosen by: {data.get('chosen_by')}")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 48: Try to create duplicate Final Choice (should fail)
+if access_token and final_choice_event_id and final_choice_slots:
+    print("\n" + "=" * 50)
+    print("Test 48: Create Duplicate Final Choice (should fail)...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{final_choice_event_id}/final-choice",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"slot_id": final_choice_slots[1]['slot_id']}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+    
+    if response.status_code == 400:
+        print("✓ Correctly rejected duplicate final choice")
+
+# Test 49: Create new event for permission tests
+another_event_for_final_choice = None
+another_event_slots = None
+if access_token:
+    print("\n" + "=" * 50)
+    print("Creating another event for final choice permission tests...")
+    print("=" * 50)
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "title": "최종시간확정 테스트 이벤트 2",
+            "date_start": "2026-01-20",
+            "date_end": "2026-01-20",
+            "time_start": "18:00",
+            "time_end": "20:00",
+            "timezone": "Asia/Seoul"
+        }
+    )
+    if response.status_code == 201:
+        another_event_for_final_choice = response.json().get('id')
+        event_slug = response.json().get('slug')
+        print(f"Created event ID: {another_event_for_final_choice}")
+        
+        # Get slots
+        response = requests.get(f"{EVENTS_BASE_URL}/{event_slug}/")
+        if response.status_code == 200:
+            another_event_slots = response.json().get('slots', [])
+            print(f"Event has {len(another_event_slots)} slots")
+
+# Test 50: Try to create Final Choice as Non-Organizer (should fail)
+if another_user_token and another_event_for_final_choice and another_event_slots:
+    print("\n" + "=" * 50)
+    print("Test 50: Create Final Choice as Non-Organizer (should fail)...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{another_event_for_final_choice}/final-choice",
+        headers={"Authorization": f"Bearer {another_user_token}"},
+        json={"slot_id": another_event_slots[0]['slot_id']}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+    
+    if response.status_code == 403:
+        print("✓ Correctly rejected non-organizer's attempt")
+
+# Test 51: Try to create Final Choice without Auth (should fail)
+if another_event_for_final_choice and another_event_slots:
+    print("\n" + "=" * 50)
+    print("Test 51: Create Final Choice without Auth (should fail)...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{another_event_for_final_choice}/final-choice",
+        json={"slot_id": another_event_slots[0]['slot_id']}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+    
+    if response.status_code == 401:
+        print("✓ Correctly rejected unauthenticated request")
+
+# Test 52: Try to create Final Choice with invalid slot_id (should fail)
+if access_token and another_event_for_final_choice:
+    print("\n" + "=" * 50)
+    print("Test 52: Create Final Choice with Invalid Slot ID (should fail)...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{another_event_for_final_choice}/final-choice",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"slot_id": 999999}  # Invalid slot ID
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+    
+    if response.status_code == 400:
+        print("✓ Correctly rejected invalid slot_id")
+
+# Test 53: Try to create Final Choice with slot from different event (should fail)
+if access_token and another_event_for_final_choice and final_choice_slots:
+    print("\n" + "=" * 50)
+    print("Test 53: Create Final Choice with Slot from Different Event (should fail)...")
+    print("=" * 50)
+    
+    # Try to use a slot from the first event for the second event
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{another_event_for_final_choice}/final-choice",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"slot_id": final_choice_slots[0]['slot_id']}  # Slot from different event
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+    
+    if response.status_code == 400:
+        print("✓ Correctly rejected slot from different event")
+
+# Test 54: Successfully create Final Choice for second event
+if access_token and another_event_for_final_choice and another_event_slots:
+    print("\n" + "=" * 50)
+    print("Test 54: Successfully Create Final Choice for Second Event...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{another_event_for_final_choice}/final-choice",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={"slot_id": another_event_slots[0]['slot_id']}
+    )
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Response: {json.dumps(data, indent=2, ensure_ascii=False)}")
+        print(f"✓ Successfully created final choice for second event")
+
+print("\n" + "=" * 50)
+print("ALL FINAL CHOICE API TESTS COMPLETED!")
+print("=" * 50)

@@ -1,10 +1,10 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.shortcuts import get_object_or_404
-from .models import Event
-from .serializers import EventSerializer, EventDetailSerializer, MyEventListSerializer, EventUpdateSerializer, EventSummarySerializer
+from .models import Event, FinalChoice
+from .serializers import EventSerializer, EventDetailSerializer, MyEventListSerializer, EventUpdateSerializer, EventSummarySerializer, FinalChoiceSerializer
 from .pagination import EventPagination
 
 
@@ -112,3 +112,36 @@ class EventSummaryView(generics.RetrieveAPIView):
         )
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class FinalChoiceCreateView(generics.CreateAPIView):
+    serializer_class = FinalChoiceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        # 이벤트 가져오기
+        event_id = kwargs.get('pk')
+        event = get_object_or_404(Event, id=event_id, is_deleted=False)
+
+        # 권한 체크: 방장만 확정 가능
+        if event.created_by != request.user:
+            raise PermissionDenied("확정 권한이 없습니다")
+
+        # 중복 체크: 이벤트당 하나의 최종 시간만 허용
+        if FinalChoice.objects.filter(event=event).exists():
+            raise ValidationError({"detail": "이미 최종 시간이 확정되었습니다"})
+
+        # Serializer로 검증 및 생성
+        serializer = self.get_serializer(
+            data=request.data,
+            context={'request': request, 'event': event}
+        )
+        serializer.is_valid(raise_exception=True)
+        final_choice = serializer.save()
+
+        # 응답 데이터 생성 (slot_id 포함)
+        response_serializer = self.get_serializer(final_choice)
+        response_data = response_serializer.data
+        response_data['slot_id'] = final_choice.slot.id
+
+        return Response(response_data, status=status.HTTP_200_OK)

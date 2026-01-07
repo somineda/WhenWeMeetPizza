@@ -51,3 +51,19 @@ class TimeSlot(models.Model):
         verbose_name_plural = 'Time Slots'
         ordering = ['start_datetime']
         unique_together = ['event', 'start_datetime']
+
+
+class FinalChoice(models.Model):
+    event = models.OneToOneField(Event, on_delete=models.CASCADE, related_name='final_choice')
+    slot = models.ForeignKey(TimeSlot, on_delete=models.CASCADE, related_name='final_choices')
+    chosen_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chosen_slots')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.event.title} - Final Choice: {self.slot}"
+
+    class Meta:
+        db_table = 'final_choices'
+        verbose_name = 'Final Choice'
+        verbose_name_plural = 'Final Choices'
+        ordering = ['-created_at']

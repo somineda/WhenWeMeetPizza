@@ -4,7 +4,7 @@ from django.conf import settings
 from datetime import datetime, timedelta
 from django.utils import timezone
 import pytz
-from .models import Event, TimeSlot
+from .models import Event, TimeSlot, FinalChoice
 
 
 class TimeSlotSerializer(serializers.ModelSerializer):
@@ -315,3 +315,66 @@ class EventSummarySerializer(serializers.Serializer):
             many=True,
             context={'total_participants': total_participants}
         ).data
+
+
+class FinalChoiceSerializer(serializers.Serializer):
+    slot_id = serializers.IntegerField(write_only=True)
+    event_id = serializers.IntegerField(source='event.id', read_only=True)
+    date = serializers.SerializerMethodField()
+    start_time = serializers.SerializerMethodField()
+    end_time = serializers.SerializerMethodField()
+    chosen_by = serializers.IntegerField(source='chosen_by.id', read_only=True)
+    created_at = serializers.DateTimeField(read_only=True)
+
+    def get_date(self, obj):
+        tz = pytz.timezone(obj.event.timezone)
+        local_dt = obj.slot.start_datetime.astimezone(tz)
+        return local_dt.strftime('%Y-%m-%d')
+
+    def get_start_time(self, obj):
+        tz = pytz.timezone(obj.event.timezone)
+        local_dt = obj.slot.start_datetime.astimezone(tz)
+        return local_dt.strftime('%H:%M')
+
+    def get_end_time(self, obj):
+        tz = pytz.timezone(obj.event.timezone)
+        local_dt = obj.slot.end_datetime.astimezone(tz)
+        return local_dt.strftime('%H:%M')
+
+    def validate_slot_id(self, value):
+        """슬롯 ID 유효성 검사"""
+        if not TimeSlot.objects.filter(id=value).exists():
+            raise serializers.ValidationError("유효하지 않은 슬롯 ID입니다")
+        return value
+
+    def validate(self, attrs):
+        """전체 유효성 검사"""
+        request = self.context.get('request')
+        event = self.context.get('event')
+
+        # 슬롯이 해당 이벤트에 속하는지 확인
+        slot_id = attrs.get('slot_id')
+        try:
+            slot = TimeSlot.objects.get(id=slot_id)
+            if slot.event != event:
+                raise serializers.ValidationError("해당 슬롯은 이 이벤트에 속하지 않습니다")
+            attrs['slot'] = slot
+        except TimeSlot.DoesNotExist:
+            raise serializers.ValidationError("유효하지 않은 슬롯 ID입니다")
+
+        return attrs
+
+    def create(self, validated_data):
+        """최종 시간 확정 생성"""
+        request = self.context.get('request')
+        event = self.context.get('event')
+        slot = validated_data['slot']
+
+        # FinalChoice 생성
+        final_choice = FinalChoice.objects.create(
+            event=event,
+            slot=slot,
+            chosen_by=request.user
+        )
+
+        return final_choice
