@@ -1233,3 +1233,217 @@ if access_token and another_event_for_final_choice and another_event_slots:
 print("\n" + "=" * 50)
 print("ALL FINAL CHOICE API TESTS COMPLETED!")
 print("=" * 50)
+
+# ============================================================
+# Phase 11: Get Final Choice API Tests
+# ============================================================
+
+# Test 55: Get Final Choice (with auth) - should succeed
+if access_token and final_choice_event_id:
+    print("\n" + "=" * 50)
+    print("Test 55: Get Final Choice (with auth)...")
+    print("=" * 50)
+    
+    response = requests.get(
+        f"{EVENTS_BASE_URL}/{final_choice_event_id}/final-choice",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Response: {json.dumps(data, indent=2, ensure_ascii=False)}")
+        print(f"✓ Successfully retrieved final choice")
+        print(f"  Event ID: {data.get('event_id')}")
+        print(f"  Slot ID: {data.get('slot_id')}")
+        print(f"  Date: {data.get('date')}")
+        print(f"  Time: {data.get('start_time')} - {data.get('end_time')}")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 56: Get Final Choice (without auth) - should succeed
+if final_choice_event_id:
+    print("\n" + "=" * 50)
+    print("Test 56: Get Final Choice (without auth)...")
+    print("=" * 50)
+    
+    response = requests.get(
+        f"{EVENTS_BASE_URL}/{final_choice_event_id}/final-choice"
+    )
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Response: {json.dumps(data, indent=2, ensure_ascii=False)}")
+        print(f"✓ Successfully retrieved final choice without auth")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 57: Get Final Choice for event without final choice (should return 404)
+# Use new_event_id which doesn't have final choice yet
+print("\n" + "=" * 50)
+print("Creating event without final choice for testing...")
+print("=" * 50)
+if access_token:
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "title": "확정없는 테스트 이벤트",
+            "date_start": "2026-01-25",
+            "date_end": "2026-01-25",
+            "time_start": "12:00",
+            "time_end": "14:00",
+            "timezone": "Asia/Seoul"
+        }
+    )
+    if response.status_code == 201:
+        no_final_choice_event_id = response.json().get('id')
+        print(f"Created event ID: {no_final_choice_event_id}")
+
+        print("\n" + "=" * 50)
+        print("Test 57: Get Final Choice for event without final choice (should return 404)...")
+        print("=" * 50)
+        
+        response = requests.get(
+            f"{EVENTS_BASE_URL}/{no_final_choice_event_id}/final-choice"
+        )
+        print(f"Status: {response.status_code}")
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+        
+        if response.status_code == 404:
+            print("✓ Correctly returned 404 for event without final choice")
+
+# Test 58: Get Final Choice for non-existent event (should return 404)
+print("\n" + "=" * 50)
+print("Test 58: Get Final Choice for non-existent event (should return 404)...")
+print("=" * 50)
+
+response = requests.get(
+    f"{EVENTS_BASE_URL}/999999/final-choice"
+)
+print(f"Status: {response.status_code}")
+print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+
+if response.status_code == 404:
+    print("✓ Correctly returned 404 for non-existent event")
+
+# Test 59: Verify both events have correct final choices
+if final_choice_event_id and another_event_for_final_choice:
+    print("\n" + "=" * 50)
+    print("Test 59: Verify both events have their own final choices...")
+    print("=" * 50)
+    
+    # First event
+    response1 = requests.get(f"{EVENTS_BASE_URL}/{final_choice_event_id}/final-choice")
+    # Second event
+    response2 = requests.get(f"{EVENTS_BASE_URL}/{another_event_for_final_choice}/final-choice")
+    
+    if response1.status_code == 200 and response2.status_code == 200:
+        data1 = response1.json()
+        data2 = response2.json()
+        
+        print(f"Event {final_choice_event_id} final choice:")
+        print(f"  Slot ID: {data1.get('slot_id')}, Date: {data1.get('date')}, Time: {data1.get('start_time')}-{data1.get('end_time')}")
+        
+        print(f"Event {another_event_for_final_choice} final choice:")
+        print(f"  Slot ID: {data2.get('slot_id')}, Date: {data2.get('date')}, Time: {data2.get('start_time')}-{data2.get('end_time')}")
+        
+        if data1.get('event_id') == final_choice_event_id and data2.get('event_id') == another_event_for_final_choice:
+            print("✓ Both events have their own separate final choices")
+
+print("\n" + "=" * 50)
+print("ALL GET FINAL CHOICE API TESTS COMPLETED!")
+print("=" * 50)
+
+# ============================================================
+# Phase 12: Send Final Choice Email API Tests
+# ============================================================
+
+# Test 60: Send Email as Organizer (should succeed)
+if access_token and final_choice_event_id:
+    print("\n" + "=" * 50)
+    print("Test 60: Send Final Choice Email as Organizer...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{final_choice_event_id}/final-choice/send-email",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+    
+    if response.status_code == 200:
+        print("✓ Email send request accepted")
+        print("  Note: Actual email sending is handled by Celery worker")
+
+# Test 61: Try to send email as Non-Organizer (should fail)
+if another_user_token and final_choice_event_id:
+    print("\n" + "=" * 50)
+    print("Test 61: Send Email as Non-Organizer (should fail)...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{final_choice_event_id}/final-choice/send-email",
+        headers={"Authorization": f"Bearer {another_user_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+    
+    if response.status_code == 403:
+        print("✓ Correctly rejected non-organizer's attempt")
+
+# Test 62: Try to send email without Auth (should fail)
+if final_choice_event_id:
+    print("\n" + "=" * 50)
+    print("Test 62: Send Email without Auth (should fail)...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{final_choice_event_id}/final-choice/send-email"
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+    
+    if response.status_code == 401:
+        print("✓ Correctly rejected unauthenticated request")
+
+# Test 63: Try to send email for event without final choice (should fail)
+if access_token and no_final_choice_event_id:
+    print("\n" + "=" * 50)
+    print("Test 63: Send Email for event without final choice (should fail)...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/{no_final_choice_event_id}/final-choice/send-email",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+    
+    if response.status_code == 400:
+        print("✓ Correctly rejected request for event without final choice")
+
+# Test 64: Try to send email for non-existent event (should fail)
+if access_token:
+    print("\n" + "=" * 50)
+    print("Test 64: Send Email for non-existent event (should fail)...")
+    print("=" * 50)
+    
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/999999/final-choice/send-email",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+    
+    if response.status_code == 404:
+        print("✓ Correctly returned 404 for non-existent event")
+
+print("\n" + "=" * 50)
+print("ALL SEND EMAIL API TESTS COMPLETED!")
+print("=" * 50)
+print("\nNote: To actually send emails, you need to:")
+print("1. Set up email credentials in .env file:")
+print("   - EMAIL_HOST_USER=your-gmail@gmail.com")
+print("   - EMAIL_HOST_PASSWORD=your-app-password")
+print("2. Start Redis server: redis-server")
+print("3. Start Celery worker: celery -A config worker -l info")

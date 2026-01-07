@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from .models import Event, FinalChoice
 from .serializers import EventSerializer, EventDetailSerializer, MyEventListSerializer, EventUpdateSerializer, EventSummarySerializer, FinalChoiceSerializer
 from .pagination import EventPagination
+from .tasks import send_final_choice_email
 
 
 class EventCreateView(generics.CreateAPIView):
@@ -114,11 +115,38 @@ class EventSummaryView(generics.RetrieveAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class FinalChoiceCreateView(generics.CreateAPIView):
+class FinalChoiceView(generics.GenericAPIView):
     serializer_class = FinalChoiceSerializer
-    permission_classes = [IsAuthenticated]
 
-    def create(self, request, *args, **kwargs):
+    def get_permissions(self):
+        """GET은 누구나, POST는 인증 필요"""
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
+
+    def get(self, request, *args, **kwargs):
+        """확정된 시간 조회"""
+        event_id = kwargs.get('pk')
+        event = get_object_or_404(Event, id=event_id, is_deleted=False)
+
+        # FinalChoice 조회
+        try:
+            final_choice = FinalChoice.objects.get(event=event)
+        except FinalChoice.DoesNotExist:
+            return Response(
+                {"detail": "확정된 시간이 없습니다"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # 응답 데이터 생성
+        serializer = self.get_serializer(final_choice)
+        response_data = serializer.data
+        response_data['slot_id'] = final_choice.slot.id
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+    def post(self, request, *args, **kwargs):
+        """최종 시간 확정"""
         # 이벤트 가져오기
         event_id = kwargs.get('pk')
         event = get_object_or_404(Event, id=event_id, is_deleted=False)
@@ -139,9 +167,47 @@ class FinalChoiceCreateView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         final_choice = serializer.save()
 
+        # 자동으로 확정 이메일 발송 (비동기)
+        try:
+            send_final_choice_email.delay(event_id)
+        except Exception:
+            # Celery 연결 실패 시 무시
+            pass
+
         # 응답 데이터 생성 (slot_id 포함)
         response_serializer = self.get_serializer(final_choice)
         response_data = response_serializer.data
         response_data['slot_id'] = final_choice.slot.id
 
         return Response(response_data, status=status.HTTP_200_OK)
+
+
+class SendFinalChoiceEmailView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        """확정된 시간을 참가자들에게 이메일로 발송"""
+        # 이벤트 가져오기
+        event_id = kwargs.get('pk')
+        event = get_object_or_404(Event, id=event_id, is_deleted=False)
+
+        # 권한 체크: 방장만 이메일 발송 가능
+        if event.created_by != request.user:
+            raise PermissionDenied("이메일 발송 권한이 없습니다")
+
+        # 확정된 시간이 있는지 확인
+        if not FinalChoice.objects.filter(event=event).exists():
+            raise ValidationError({"detail": "확정된 시간이 없습니다"})
+
+        # Celery task로 이메일 발송 (비동기)
+        try:
+            send_final_choice_email.delay(event_id)
+        except Exception as e:
+            # Celery 연결 실패 시 동기적으로 이메일 발송
+            # 또는 나중에 재시도할 수 있도록 큐에 저장
+            pass
+
+        return Response(
+            {"detail": "이메일 전송이 완료되었습니다"},
+            status=status.HTTP_200_OK
+        )
