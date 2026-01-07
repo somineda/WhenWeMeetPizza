@@ -27,7 +27,7 @@ class EventDetailView(generics.RetrieveAPIView):
 
     def get_object(self):
         slug = self.kwargs.get('slug')
-        return get_object_or_404(Event, slug=slug)
+        return get_object_or_404(Event, slug=slug, is_deleted=False)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -41,14 +41,19 @@ class MyEventListView(generics.ListAPIView):
     pagination_class = EventPagination
 
     def get_queryset(self):
-        return Event.objects.filter(created_by=self.request.user).order_by('-created_at')
+        return Event.objects.filter(
+            created_by=self.request.user,
+            is_deleted=False
+        ).order_by('-created_at')
 
 
-class EventUpdateView(generics.UpdateAPIView):
+class EventUpdateView(generics.UpdateAPIView, generics.DestroyAPIView):
     serializer_class = EventUpdateSerializer
     permission_classes = [IsAuthenticated]
-    queryset = Event.objects.all()
     lookup_field = 'pk'
+
+    def get_queryset(self):
+        return Event.objects.filter(is_deleted=False)
 
     def update(self, request, *args, **kwargs):
         event = self.get_object()
@@ -63,3 +68,16 @@ class EventUpdateView(generics.UpdateAPIView):
         self.perform_update(serializer)
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def destroy(self, request, *args, **kwargs):
+        event = self.get_object()
+
+        # 권한 체크: 방장(created_by)만 삭제 가능
+        if event.created_by != request.user:
+            raise PermissionDenied("삭제 권한이 없습니다")
+
+        # Soft delete
+        event.is_deleted = True
+        event.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

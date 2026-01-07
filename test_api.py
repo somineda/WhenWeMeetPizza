@@ -685,3 +685,91 @@ if another_user_token and event_id_for_update:
     )
     print(f"Status: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+# ============================================================
+# Phase 8: Event Delete API Tests
+# ============================================================
+
+# Test 34: Delete Event as Organizer (should succeed)
+if access_token and event_id_for_update:
+    print("\n" + "=" * 50)
+    print("Testing Delete Event (Organizer)...")
+    print("=" * 50)
+    response = requests.delete(
+        f"{EVENTS_BASE_URL}/{event_id_for_update}/",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    if response.status_code == 204:
+        print("Response: Successfully deleted (204 No Content)")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+
+# Test 35: Verify deleted event is not accessible
+if event_id_for_update:
+    print("\n" + "=" * 50)
+    print("Testing Access Deleted Event (should fail)...")
+    print("=" * 50)
+    response = requests.get(f"{EVENTS_BASE_URL}/{created_event_slug}/")
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+
+# Test 36: Verify deleted event not in My Events list
+if access_token:
+    print("\n" + "=" * 50)
+    print("Testing My Events after deletion (should not include deleted event)...")
+    print("=" * 50)
+    response = requests.get(
+        f"{EVENTS_BASE_URL}/my/",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    data = response.json()
+    deleted_event_in_list = any(item['id'] == event_id_for_update for item in data.get('items', []))
+    if deleted_event_in_list:
+        print("❌ Deleted event is still in the list!")
+    else:
+        print("✓ Deleted event is not in the list")
+    print(f"Total events: {data.get('total')}")
+
+# Test 37: Delete without Authentication (should fail)
+# Create a new event for this test
+new_event_id = None
+if access_token:
+    print("\n" + "=" * 50)
+    print("Creating new event for delete permission test...")
+    print("=" * 50)
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "title": "삭제 테스트 이벤트",
+            "date_start": "2025-12-25",
+            "date_end": "2025-12-30",
+            "time_start": "09:00",
+            "time_end": "23:00",
+            "timezone": "Asia/Seoul"
+        }
+    )
+    if response.status_code == 201:
+        new_event_id = response.json().get('id')
+        print(f"Created event ID: {new_event_id}")
+
+if new_event_id:
+    print("\n" + "=" * 50)
+    print("Testing Delete without Auth (should fail)...")
+    print("=" * 50)
+    response = requests.delete(f"{EVENTS_BASE_URL}/{new_event_id}/")
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+
+# Test 38: Delete as Non-Organizer (should fail)
+if another_user_token and new_event_id:
+    print("\n" + "=" * 50)
+    print("Testing Delete as Non-Organizer (should fail)...")
+    print("=" * 50)
+    response = requests.delete(
+        f"{EVENTS_BASE_URL}/{new_event_id}/",
+        headers={"Authorization": f"Bearer {another_user_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
