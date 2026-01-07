@@ -91,3 +91,26 @@ class SubmitAvailabilitySerializer(serializers.Serializer):
             'submitted_count': len(available_slot_ids),
             'available_slot_ids': available_slot_ids
         }
+
+
+class AvailabilityRetrieveSerializer(serializers.Serializer):
+    participant_id = serializers.IntegerField()
+    participant_nickname = serializers.CharField()
+    event_id = serializers.IntegerField()
+    available_slot_ids = serializers.ListField(child=serializers.IntegerField())
+    total_available = serializers.IntegerField()
+
+    def to_representation(self, participant):
+        # 참가자의 가능한 타임슬롯 조회
+        available_slots = ParticipantAvailability.objects.filter(
+            participant=participant,
+            is_available=True
+        ).values_list('time_slot_id', flat=True)
+
+        return {
+            'participant_id': participant.id,
+            'participant_nickname': participant.nickname,
+            'event_id': participant.event.id,
+            'available_slot_ids': list(available_slots),
+            'total_available': len(available_slots)
+        }
