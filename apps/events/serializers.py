@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.conf import settings
 from datetime import datetime, timedelta
+from django.utils import timezone
 import pytz
 from .models import Event, TimeSlot
 
@@ -102,3 +103,66 @@ class EventSerializer(serializers.ModelSerializer):
 
             # 다음 날짜로
             current_date += timedelta(days=1)
+
+
+class SlotSummarySerializer(serializers.Serializer):
+    slot_id = serializers.IntegerField(source='id')
+    date = serializers.SerializerMethodField()
+    start_time = serializers.SerializerMethodField()
+    end_time = serializers.SerializerMethodField()
+    available_count = serializers.SerializerMethodField()
+    total_participants = serializers.SerializerMethodField()
+
+    def get_date(self, obj):
+        tz = pytz.timezone(obj.event.timezone)
+        local_dt = obj.start_datetime.astimezone(tz)
+        return local_dt.strftime('%Y-%m-%d')
+
+    def get_start_time(self, obj):
+        tz = pytz.timezone(obj.event.timezone)
+        local_dt = obj.start_datetime.astimezone(tz)
+        return local_dt.strftime('%H:%M')
+
+    def get_end_time(self, obj):
+        tz = pytz.timezone(obj.event.timezone)
+        local_dt = obj.end_datetime.astimezone(tz)
+        return local_dt.strftime('%H:%M')
+
+    def get_available_count(self, obj):
+        return obj.availabilities.filter(is_available=True).count()
+
+    def get_total_participants(self, obj):
+        return self.context.get('total_participants', 0)
+
+
+class EventDetailSerializer(serializers.ModelSerializer):
+    organizer_id = serializers.IntegerField(source='created_by.id', read_only=True)
+    is_closed = serializers.SerializerMethodField()
+    participants_count = serializers.SerializerMethodField()
+    slots = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Event
+        fields = [
+            'id', 'slug', 'title', 'description',
+            'date_start', 'date_end', 'time_start', 'time_end',
+            'timezone', 'deadline_at', 'organizer_id',
+            'is_closed', 'participants_count', 'slots'
+        ]
+
+    def get_is_closed(self, obj):
+        if not obj.deadline_at:
+            return False
+        return timezone.now() > obj.deadline_at
+
+    def get_participants_count(self, obj):
+        return obj.participants.count()
+
+    def get_slots(self, obj):
+        total_participants = obj.participants.count()
+        time_slots = obj.time_slots.all().prefetch_related('availabilities')
+        return SlotSummarySerializer(
+            time_slots,
+            many=True,
+            context={'total_participants': total_participants}
+        ).data

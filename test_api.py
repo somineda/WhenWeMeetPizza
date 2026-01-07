@@ -337,3 +337,39 @@ if access_token and another_anonymous_id:
     )
     print(f"Status: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
+
+# ============================================================
+# Phase 4: Event Detail API Tests
+# ============================================================
+
+# Test 16: Get Event Detail (without authentication)
+print("\n" + "=" * 50)
+print("Testing Get Event Detail (No Auth)...")
+print("=" * 50)
+response = requests.get(
+    f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/"
+)
+print(f"Status: {response.status_code}")
+print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 17: Get Event Detail with Authentication
+if access_token:
+    print("\n" + "=" * 50)
+    print("Testing Get Event Detail (With Auth)...")
+    print("=" * 50)
+    response = requests.get(
+        f"{EVENTS_BASE_URL}/{TEST_EVENT_SLUG}/",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+    print(f"Status: {response.status_code}")
+    print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 18: Get Non-existent Event Detail (should fail with 404)
+print("\n" + "=" * 50)
+print("Testing Get Non-existent Event Detail (should fail)...")
+print("=" * 50)
+response = requests.get(
+    f"{EVENTS_BASE_URL}/nonexistent-event-slug/"
+)
+print(f"Status: {response.status_code}")
+print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False) if response.headers.get('content-type') == 'application/json' else response.text}")
