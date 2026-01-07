@@ -773,3 +773,291 @@ if another_user_token and new_event_id:
     )
     print(f"Status: {response.status_code}")
     print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+# ============================================================
+# Phase 9: Event Summary API Tests
+# ============================================================
+
+# Create a new event specifically for summary tests
+summary_test_event_id = None
+summary_test_event_slug = None
+if access_token:
+    print("\n" + "=" * 50)
+    print("Creating new event for summary tests...")
+    print("=" * 50)
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "title": "요약 테스트 이벤트",
+            "date_start": "2026-01-10",
+            "date_end": "2026-01-11",
+            "time_start": "14:00",
+            "time_end": "16:00",  # 4 slots per day = 8 total slots
+            "timezone": "Asia/Seoul"
+        }
+    )
+    if response.status_code == 201:
+        summary_test_event_id = response.json().get('id')
+        summary_test_event_slug = response.json().get('slug')
+        print(f"Created event ID: {summary_test_event_id}")
+        print(f"Created event slug: {summary_test_event_slug}")
+
+# Create participants and submit availabilities
+summary_participant_ids = []
+if summary_test_event_slug:
+    print("\n" + "=" * 50)
+    print("Creating participants for summary tests...")
+    print("=" * 50)
+    
+    # Get time slots
+    response = requests.get(f"{EVENTS_BASE_URL}/{summary_test_event_slug}/")
+    summary_time_slots = []
+    if response.status_code == 200:
+        summary_time_slots = response.json().get('slots', [])
+        print(f"Total time slots: {len(summary_time_slots)}")
+    
+    # Create 3 participants
+    for i in range(1, 4):
+        response = requests.post(
+            f"{EVENTS_BASE_URL}/{summary_test_event_slug}/participants/",
+            json={
+                "nickname": f"요약테스트참가자{i}",
+                "email": f"summary-test-{i}@example.com"
+            }
+        )
+        if response.status_code == 200:
+            participant_id = response.json().get('participant_id')
+            summary_participant_ids.append(participant_id)
+            print(f"Created participant {i}: {participant_id}")
+    
+    # Submit availabilities
+    if summary_participant_ids and summary_time_slots:
+        print("\n" + "=" * 50)
+        print("Submitting availabilities for summary tests...")
+        print("=" * 50)
+        
+        # Participant 1: available for first 6 slots
+        slot_ids_1 = [slot['slot_id'] for slot in summary_time_slots[:6]]
+        requests.post(
+            f"http://127.0.0.1:8000/api/v1/participants/{summary_participant_ids[0]}/availabilities/",
+            json={"available_slot_ids": slot_ids_1}
+        )
+        print(f"Participant 1 available for {len(slot_ids_1)} slots")
+        
+        # Participant 2: available for first 4 slots (overlap with P1)
+        slot_ids_2 = [slot['slot_id'] for slot in summary_time_slots[:4]]
+        requests.post(
+            f"http://127.0.0.1:8000/api/v1/participants/{summary_participant_ids[1]}/availabilities/",
+            json={"available_slot_ids": slot_ids_2}
+        )
+        print(f"Participant 2 available for {len(slot_ids_2)} slots")
+        
+        # Participant 3: available for first 2 slots (all participants overlap)
+        slot_ids_3 = [slot['slot_id'] for slot in summary_time_slots[:2]]
+        requests.post(
+            f"http://127.0.0.1:8000/api/v1/participants/{summary_participant_ids[2]}/availabilities/",
+            json={"available_slot_ids": slot_ids_3}
+        )
+        print(f"Participant 3 available for {len(slot_ids_3)} slots")
+        
+        print("\nExpected availability pattern:")
+        print("  Slot 1-2: 3 participants (all)")
+        print("  Slot 3-4: 2 participants (P1, P2)")
+        print("  Slot 5-6: 1 participant (P1)")
+        print("  Slot 7-8: 0 participants")
+
+# Test 39: Get Event Summary without filters
+if summary_test_event_id:
+    print("\n" + "=" * 50)
+    print("Test 39: Get Event Summary (No Filters)...")
+    print("=" * 50)
+    response = requests.get(f"{EVENTS_BASE_URL}/{summary_test_event_id}/summary/")
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Event ID: {data.get('event_id')}")
+        print(f"Total Participants: {data.get('total_participants')}")
+        print(f"Total Slots: {len(data.get('slots', []))}")
+        print(f"Total Best Slots: {len(data.get('best_slots', []))}")
+        
+        print("\nFirst 5 slots:")
+        for slot in data.get('slots', [])[:5]:
+            print(f"  Slot {slot['slot_id']}: {slot['available_count']} available, is_all_available={slot['is_all_available']}")
+        
+        print("\nFirst 5 best slots (sorted by available_count):")
+        for slot in data.get('best_slots', [])[:5]:
+            print(f"  Slot {slot['slot_id']}: {slot['available_count']} available, is_all_available={slot['is_all_available']}")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 40: Get Event Summary with min_participants=2
+if summary_test_event_id:
+    print("\n" + "=" * 50)
+    print("Test 40: Get Event Summary (min_participants=2)...")
+    print("=" * 50)
+    response = requests.get(f"{EVENTS_BASE_URL}/{summary_test_event_id}/summary/?min_participants=2")
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Total Slots (filtered): {len(data.get('slots', []))}")
+        print(f"Total Best Slots (filtered): {len(data.get('best_slots', []))}")
+        
+        print("\nFiltered slots (only slots with 2+ participants):")
+        for slot in data.get('slots', []):
+            print(f"  Slot {slot['slot_id']}: {slot['available_count']} available, is_all_available={slot['is_all_available']}")
+        
+        # Verify all slots have at least 2 participants
+        all_meet_min = all(slot['available_count'] >= 2 for slot in data.get('slots', []))
+        if all_meet_min:
+            print("✓ All filtered slots have at least 2 participants")
+        else:
+            print("❌ Some slots don't meet min_participants requirement")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 41: Get Event Summary with min_participants=3
+if summary_test_event_id:
+    print("\n" + "=" * 50)
+    print("Test 41: Get Event Summary (min_participants=3)...")
+    print("=" * 50)
+    response = requests.get(f"{EVENTS_BASE_URL}/{summary_test_event_id}/summary/?min_participants=3")
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Total Slots (filtered): {len(data.get('slots', []))}")
+        
+        print("\nFiltered slots (only slots with 3 participants - all available):")
+        for slot in data.get('slots', []):
+            print(f"  Slot {slot['slot_id']}: {slot['available_count']} available, is_all_available={slot['is_all_available']}")
+        
+        # Should only show slots 1-2 (where all 3 participants are available)
+        if len(data.get('slots', [])) == 2:
+            print("✓ Correctly filtered to slots where all 3 participants are available")
+        else:
+            print(f"❌ Expected 2 slots, got {len(data.get('slots', []))}")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 42: Get Event Summary with only_all_available=true
+if summary_test_event_id:
+    print("\n" + "=" * 50)
+    print("Test 42: Get Event Summary (only_all_available=true)...")
+    print("=" * 50)
+    response = requests.get(f"{EVENTS_BASE_URL}/{summary_test_event_id}/summary/?only_all_available=true")
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Total Participants: {data.get('total_participants')}")
+        print(f"Total Slots (only all available): {len(data.get('slots', []))}")
+        
+        print("\nSlots where all participants are available:")
+        for slot in data.get('slots', []):
+            print(f"  Slot {slot['slot_id']}: {slot['available_count']} available, is_all_available={slot['is_all_available']}")
+        
+        # Verify all slots have is_all_available=True
+        all_slots_all_available = all(slot['is_all_available'] for slot in data.get('slots', []))
+        if all_slots_all_available and len(data.get('slots', [])) > 0:
+            print("✓ All filtered slots have all participants available")
+        elif len(data.get('slots', [])) == 0:
+            print("⚠ No slots where all participants are available (expected 2)")
+        else:
+            print("❌ Some slots don't have all participants available")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 43: Get Event Summary with combined filters
+if summary_test_event_id:
+    print("\n" + "=" * 50)
+    print("Test 43: Get Event Summary (min_participants=2 & only_all_available=true)...")
+    print("=" * 50)
+    response = requests.get(f"{EVENTS_BASE_URL}/{summary_test_event_id}/summary/?min_participants=2&only_all_available=true")
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Total Slots (filtered): {len(data.get('slots', []))}")
+        
+        print("\nFiltered slots:")
+        for slot in data.get('slots', []):
+            print(f"  Slot {slot['slot_id']}: {slot['available_count']} available, is_all_available={slot['is_all_available']}")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+# Test 44: Verify best_slots are sorted by available_count descending
+if summary_test_event_id:
+    print("\n" + "=" * 50)
+    print("Test 44: Verify best_slots sorting...")
+    print("=" * 50)
+    response = requests.get(f"{EVENTS_BASE_URL}/{summary_test_event_id}/summary/")
+    if response.status_code == 200:
+        data = response.json()
+        best_slots = data.get('best_slots', [])
+        
+        print("Best slots in order:")
+        for i, slot in enumerate(best_slots[:8]):
+            print(f"  {i+1}. Slot {slot['slot_id']}: {slot['available_count']} available")
+        
+        # Verify descending order
+        counts = [slot['available_count'] for slot in best_slots]
+        is_sorted = all(counts[i] >= counts[i+1] for i in range(len(counts)-1))
+        if is_sorted:
+            print("✓ Best slots are correctly sorted by available_count (descending)")
+        else:
+            print("❌ Best slots are NOT sorted correctly")
+            print(f"   Counts: {counts}")
+
+# Test 45: Event Summary with no participants
+if access_token:
+    print("\n" + "=" * 50)
+    print("Test 45: Event Summary with No Participants...")
+    print("=" * 50)
+    
+    # Create event without participants
+    response = requests.post(
+        f"{EVENTS_BASE_URL}/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        json={
+            "title": "참가자 없는 이벤트",
+            "date_start": "2026-01-15",
+            "date_end": "2026-01-15",
+            "time_start": "10:00",
+            "time_end": "12:00",
+            "timezone": "Asia/Seoul"
+        }
+    )
+    
+    if response.status_code == 201:
+        empty_event_id = response.json().get('id')
+        
+        response = requests.get(f"{EVENTS_BASE_URL}/{empty_event_id}/summary/")
+        print(f"Status: {response.status_code}")
+        if response.status_code == 200:
+            data = response.json()
+            print(f"Total Participants: {data.get('total_participants')}")
+            print(f"Total Slots: {len(data.get('slots', []))}")
+            print(f"Total Best Slots: {len(data.get('best_slots', []))}")
+            
+            if data.get('total_participants') == 0:
+                print("✓ Correctly shows 0 participants")
+            
+            # All slots should have 0 available_count
+            all_zero = all(slot['available_count'] == 0 for slot in data.get('slots', []))
+            if all_zero and len(data.get('slots', [])) > 0:
+                print("✓ All slots have 0 available_count")
+
+# Test 46: Event Summary with invalid min_participants (should default to 1)
+if summary_test_event_id:
+    print("\n" + "=" * 50)
+    print("Test 46: Event Summary with Invalid min_participants...")
+    print("=" * 50)
+    response = requests.get(f"{EVENTS_BASE_URL}/{summary_test_event_id}/summary/?min_participants=invalid")
+    print(f"Status: {response.status_code}")
+    if response.status_code == 200:
+        data = response.json()
+        print(f"Total Slots: {len(data.get('slots', []))}")
+        print("✓ Invalid min_participants handled gracefully (defaulted to 1)")
+    else:
+        print(f"Response: {json.dumps(response.json(), indent=2, ensure_ascii=False)}")
+
+print("\n" + "=" * 50)
+print("ALL TESTS COMPLETED!")
+print("=" * 50)

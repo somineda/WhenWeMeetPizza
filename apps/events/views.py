@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404
 from .models import Event
-from .serializers import EventSerializer, EventDetailSerializer, MyEventListSerializer, EventUpdateSerializer
+from .serializers import EventSerializer, EventDetailSerializer, MyEventListSerializer, EventUpdateSerializer, EventSummarySerializer
 from .pagination import EventPagination
 
 
@@ -81,3 +81,34 @@ class EventUpdateView(generics.UpdateAPIView, generics.DestroyAPIView):
         event.save()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class EventSummaryView(generics.RetrieveAPIView):
+    serializer_class = EventSummarySerializer
+    permission_classes = [AllowAny]
+    lookup_field = 'pk'
+
+    def get_queryset(self):
+        return Event.objects.filter(is_deleted=False)
+
+    def retrieve(self, request, *args, **kwargs):
+        event = self.get_object()
+
+        # 쿼리 파라미터 파싱
+        min_participants = request.query_params.get('min_participants', 1)
+        try:
+            min_participants = int(min_participants)
+        except ValueError:
+            min_participants = 1
+
+        only_all_available = request.query_params.get('only_all_available', 'false').lower() == 'true'
+
+        # Serializer에 context 전달
+        serializer = self.get_serializer(
+            event,
+            context={
+                'min_participants': min_participants,
+                'only_all_available': only_all_available
+            }
+        )
+
+        return Response(serializer.data, status=status.HTTP_200_OK)

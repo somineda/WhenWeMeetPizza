@@ -214,3 +214,103 @@ class EventUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("종료 시간이 시작 시간보다 먼저이거나 같습니다")
 
         return attrs
+
+class SlotSummaryWithAllAvailableSerializer(serializers.Serializer):
+    slot_id = serializers.IntegerField(source='id')
+    date = serializers.SerializerMethodField()
+    start_time = serializers.SerializerMethodField()
+    end_time = serializers.SerializerMethodField()
+    available_count = serializers.SerializerMethodField()
+    is_all_available = serializers.SerializerMethodField()
+
+    def get_date(self, obj):
+        tz = pytz.timezone(obj.event.timezone)
+        local_dt = obj.start_datetime.astimezone(tz)
+        return local_dt.strftime('%Y-%m-%d')
+
+    def get_start_time(self, obj):
+        tz = pytz.timezone(obj.event.timezone)
+        local_dt = obj.start_datetime.astimezone(tz)
+        return local_dt.strftime('%H:%M')
+
+    def get_end_time(self, obj):
+        tz = pytz.timezone(obj.event.timezone)
+        local_dt = obj.end_datetime.astimezone(tz)
+        return local_dt.strftime('%H:%M')
+
+    def get_available_count(self, obj):
+        return obj.availabilities.filter(is_available=True).count()
+
+    def get_is_all_available(self, obj):
+        total_participants = self.context.get('total_participants', 0)
+        available_count = self.get_available_count(obj)
+        return available_count == total_participants and total_participants > 0
+
+
+class EventSummarySerializer(serializers.Serializer):
+    event_id = serializers.IntegerField(source='id')
+    total_participants = serializers.SerializerMethodField()
+    slots = serializers.SerializerMethodField()
+    best_slots = serializers.SerializerMethodField()
+
+    def get_total_participants(self, obj):
+        return obj.participants.count()
+
+    def get_slots(self, obj):
+        total_participants = self.get_total_participants(obj)
+        time_slots = obj.time_slots.all().prefetch_related('availabilities')
+
+        # 필터링
+        min_participants = self.context.get('min_participants', 1)
+        only_all_available = self.context.get('only_all_available', False)
+
+        filtered_slots = []
+        for slot in time_slots:
+            available_count = slot.availabilities.filter(is_available=True).count()
+
+            if available_count < min_participants:
+                continue
+
+            if only_all_available and available_count != total_participants:
+                continue
+
+            filtered_slots.append(slot)
+
+        return SlotSummaryWithAllAvailableSerializer(
+            filtered_slots,
+            many=True,
+            context={'total_participants': total_participants}
+        ).data
+
+    def get_best_slots(self, obj):
+        total_participants = self.get_total_participants(obj)
+        time_slots = obj.time_slots.all().prefetch_related('availabilities')
+
+        # 필터링
+        min_participants = self.context.get('min_participants', 1)
+        only_all_available = self.context.get('only_all_available', False)
+
+        filtered_slots = []
+        for slot in time_slots:
+            available_count = slot.availabilities.filter(is_available=True).count()
+
+            if available_count < min_participants:
+                continue
+
+            if only_all_available and available_count != total_participants:
+                continue
+
+            filtered_slots.append(slot)
+
+        # available_count로 정렬 (내림차순)
+        sorted_slots = sorted(
+            filtered_slots,
+            key=lambda s: s.availabilities.filter(is_available=True).count(),
+            reverse=True
+        )
+
+        return SlotSummaryWithAllAvailableSerializer(
+            sorted_slots,
+            many=True,
+            context={'total_participants': total_participants}
+        ).data
