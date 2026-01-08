@@ -1,5 +1,4 @@
 from rest_framework.views import exception_handler
-from rest_framework.exceptions import ValidationError, AuthenticationFailed, NotAuthenticated, PermissionDenied, NotFound, MethodNotAllowed
 
 
 def custom_exception_handler(exc, context):

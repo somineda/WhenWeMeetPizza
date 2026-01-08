@@ -30,6 +30,8 @@ class EventSerializer(serializers.ModelSerializer):
     organizer_id = serializers.IntegerField(source='created_by.id', read_only=True)
     url = serializers.SerializerMethodField()
     time_slots_count = serializers.SerializerMethodField()
+    share_url = serializers.SerializerMethodField()
+    qr_code_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Event
@@ -37,9 +39,9 @@ class EventSerializer(serializers.ModelSerializer):
             'id', 'slug', 'title', 'description',
             'date_start', 'date_end', 'time_start', 'time_end',
             'timezone', 'deadline_at', 'organizer_id',
-            'created_at', 'url', 'time_slots_count'
+            'created_at', 'url', 'time_slots_count', 'share_url', 'qr_code_url'
         ]
-        read_only_fields = ['id', 'slug', 'created_at', 'organizer_id', 'url', 'time_slots_count']
+        read_only_fields = ['id', 'slug', 'created_at', 'organizer_id', 'url', 'time_slots_count', 'share_url', 'qr_code_url']
 
     def get_time_slots_count(self, obj):
         """생성된 타임슬롯 개수"""
@@ -48,6 +50,18 @@ class EventSerializer(serializers.ModelSerializer):
     def get_url(self, obj):
         frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
         return f"{frontend_url}/e/{obj.slug}"
+
+    def get_share_url(self, obj):
+        """공유용 URL (프론트엔드)"""
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:3000')
+        return f"{frontend_url}/e/{obj.slug}"
+
+    def get_qr_code_url(self, obj):
+        """QR 코드 생성 API URL"""
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(f'/api/v1/events/{obj.id}/qr-code')
+        return f"/api/v1/events/{obj.id}/qr-code"
 
     def validate(self, attrs):
         # 날짜 유효성 검사
@@ -378,3 +392,107 @@ class FinalChoiceSerializer(serializers.Serializer):
         )
 
         return final_choice
+
+
+class RecommendedTimeSlotSerializer(serializers.Serializer):
+    """최적 시간 추천 결과 Serializer"""
+    slot_id = serializers.IntegerField()
+    start_datetime = serializers.DateTimeField()
+    end_datetime = serializers.DateTimeField()
+    start_datetime_local = serializers.CharField()
+    end_datetime_local = serializers.CharField()
+    available_count = serializers.IntegerField()
+    total_participants = serializers.IntegerField()
+    available_percentage = serializers.FloatField()
+    available_participants = serializers.ListField(child=serializers.CharField())
+
+
+class TimeRecommendationSerializer(serializers.Serializer):
+    """시간 추천 API 응답 Serializer"""
+    event_id = serializers.IntegerField()
+    event_title = serializers.CharField()
+    total_participants = serializers.IntegerField()
+    total_time_slots = serializers.IntegerField()
+    recommended_slots = RecommendedTimeSlotSerializer(many=True)
+    message = serializers.CharField()
+
+
+class EventShareSerializer(serializers.Serializer):
+    """이벤트 공유 정보 Serializer"""
+    event_id = serializers.IntegerField()
+    event_title = serializers.CharField()
+    event_slug = serializers.CharField()
+    share_url = serializers.CharField()
+    qr_code_url = serializers.CharField()
+
+    # 카카오톡 공유용 메타데이터
+    kakao_title = serializers.CharField()
+    kakao_description = serializers.CharField()
+    kakao_image_url = serializers.CharField(required=False, allow_null=True)
+
+    # 카카오톡 SDK용 템플릿 객체
+    kakao_template = serializers.DictField(required=False)
+
+    # 이메일 공유용 정보
+    email_subject = serializers.CharField()
+    email_body = serializers.CharField()
+
+
+class InviteEmailSerializer(serializers.Serializer):
+    """이메일 초대 요청 Serializer"""
+    emails = serializers.ListField(
+        child=serializers.EmailField(),
+        min_length=1,
+        max_length=50,
+        help_text="초대할 이메일 주소 목록 (최대 50개)"
+    )
+    message = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=500,
+        help_text="개인 메시지 (선택, 최대 500자)"
+    )
+
+
+class ParticipantStatusSerializer(serializers.Serializer):
+    """참가자 상태 Serializer"""
+    participant_id = serializers.IntegerField()
+    nickname = serializers.CharField()
+    email = serializers.EmailField(allow_null=True)
+    is_registered = serializers.BooleanField()  # 회원 가입 여부
+    has_submitted = serializers.BooleanField()  # 시간 제출 여부
+    submitted_slots_count = serializers.IntegerField()  # 제출한 시간대 개수
+    joined_at = serializers.DateTimeField()
+
+
+class HeatmapSlotSerializer(serializers.Serializer):
+    """히트맵용 타임슬롯 Serializer"""
+    slot_id = serializers.IntegerField()
+    start_datetime = serializers.DateTimeField()
+    end_datetime = serializers.DateTimeField()
+    start_datetime_local = serializers.CharField()
+    end_datetime_local = serializers.CharField()
+    available_count = serializers.IntegerField()
+    available_participants = serializers.ListField(
+        child=serializers.DictField()
+    )
+    availability_rate = serializers.FloatField()  # 가능 비율 (%)
+
+
+class DashboardStatsSerializer(serializers.Serializer):
+    """대시보드 통계 Serializer"""
+    total_participants = serializers.IntegerField()
+    submitted_participants = serializers.IntegerField()
+    pending_participants = serializers.IntegerField()
+    submission_rate = serializers.FloatField()
+    total_time_slots = serializers.IntegerField()
+    most_popular_slot = serializers.DictField(allow_null=True)
+
+
+class EventDashboardSerializer(serializers.Serializer):
+    """이벤트 대시보드 전체 응답 Serializer"""
+    event_id = serializers.IntegerField()
+    event_title = serializers.CharField()
+    stats = DashboardStatsSerializer()
+    participants = ParticipantStatusSerializer(many=True)
+    heatmap = HeatmapSlotSerializer(many=True)
