@@ -687,3 +687,144 @@ class EventDashboardView(generics.GenericAPIView):
 
         serializer = EventDashboardSerializer(dashboard_data)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CalendarExportView(generics.GenericAPIView):
+    """캘린더 내보내기 정보 제공 API"""
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        """
+        확정된 일정을 캘린더에 추가할 수 있는 링크 및 정보를 제공합니다.
+
+        - Google Calendar 추가 URL
+        - .ics 파일 다운로드 URL
+        - 확정된 시간 정보
+
+        권한: 모든 사용자 (링크를 알면 누구나 조회 가능)
+        """
+        from .serializers import CalendarExportSerializer
+        from urllib.parse import quote
+        import pytz
+
+        event_id = self.kwargs.get('event_id')
+        event = get_object_or_404(Event, id=event_id)
+
+        # 확정된 시간 가져오기
+        try:
+            final_choice = FinalChoice.objects.get(event=event)
+            has_final_choice = True
+            final_slot = final_choice.slot
+
+            # 타임존 변환
+            tz = pytz.timezone(event.timezone)
+            start_local = final_slot.start_datetime.astimezone(tz)
+            end_local = final_slot.end_datetime.astimezone(tz)
+
+            # Google Calendar URL 생성
+            # 형식: https://calendar.google.com/calendar/render?action=TEMPLATE&text={title}&dates={start}/{end}&details={description}
+            # 날짜 형식: YYYYMMDDTHHMMSSZ (UTC)
+            start_utc = final_slot.start_datetime.strftime('%Y%m%dT%H%M%SZ')
+            end_utc = final_slot.end_datetime.strftime('%Y%m%dT%H%M%SZ')
+
+            title_encoded = quote(event.title)
+            description_encoded = quote(event.description if event.description else '')
+
+            google_calendar_url = (
+                f"https://calendar.google.com/calendar/render"
+                f"?action=TEMPLATE"
+                f"&text={title_encoded}"
+                f"&dates={start_utc}/{end_utc}"
+                f"&details={description_encoded}"
+            )
+
+            message = f"{event.title} 일정이 확정되었습니다. 캘린더에 추가하세요!"
+
+        except FinalChoice.DoesNotExist:
+            has_final_choice = False
+            final_slot = None
+            start_local = None
+            end_local = None
+            google_calendar_url = None
+            message = "아직 최종 시간이 확정되지 않았습니다."
+
+        # .ics 다운로드 URL
+        base_url = request.build_absolute_uri('/').rstrip('/')
+        ics_download_url = f"{base_url}/api/v1/events/{event_id}/calendar.ics"
+
+        data = {
+            'event_id': event.id,
+            'event_title': event.title,
+            'has_final_choice': has_final_choice,
+            'final_start_datetime': final_slot.start_datetime if final_slot else None,
+            'final_end_datetime': final_slot.end_datetime if final_slot else None,
+            'final_start_datetime_local': start_local.isoformat() if start_local else None,
+            'final_end_datetime_local': end_local.isoformat() if end_local else None,
+            'google_calendar_url': google_calendar_url,
+            'ics_download_url': ics_download_url,
+            'message': message
+        }
+
+        serializer = CalendarExportSerializer(data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CalendarICSDownloadView(generics.GenericAPIView):
+    """iCalendar (.ics) 파일 다운로드 API"""
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        """
+        확정된 일정을 .ics 파일로 다운로드합니다.
+        모든 캘린더 앱(Google Calendar, Apple Calendar, Outlook 등)에서 열 수 있습니다.
+
+        권한: 모든 사용자
+        """
+        from django.http import HttpResponse
+        from django.utils import timezone
+
+        event_id = self.kwargs.get('event_id')
+        event = get_object_or_404(Event, id=event_id)
+
+        # 확정된 시간 가져오기
+        try:
+            final_choice = FinalChoice.objects.get(event=event)
+            final_slot = final_choice.slot
+        except FinalChoice.DoesNotExist:
+            return Response({
+                'detail': '아직 최종 시간이 확정되지 않았습니다.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # .ics 파일 생성 (iCalendar 형식)
+        # 날짜 형식: YYYYMMDDTHHMMSSZ (UTC)
+        start_utc = final_slot.start_datetime.strftime('%Y%m%dT%H%M%SZ')
+        end_utc = final_slot.end_datetime.strftime('%Y%m%dT%H%M%SZ')
+        now_utc = timezone.now().strftime('%Y%m%dT%H%M%SZ')
+
+        # UID 생성 (고유 식별자)
+        uid = f"event-{event.id}-finalchoice-{final_choice.id}@pizzascheduler"
+
+        # 이벤트 설명
+        description = event.description.replace('\n', '\\n') if event.description else ''
+
+        ics_content = f"""BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Pizza Scheduler//Event Calendar//KO
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:{uid}
+DTSTAMP:{now_utc}
+DTSTART:{start_utc}
+DTEND:{end_utc}
+SUMMARY:{event.title}
+DESCRIPTION:{description}
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+END:VCALENDAR"""
+
+        # HTTP 응답 생성
+        response = HttpResponse(ics_content, content_type='text/calendar; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="{event.slug}.ics"'
+        return response

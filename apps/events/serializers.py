@@ -496,3 +496,24 @@ class EventDashboardSerializer(serializers.Serializer):
     stats = DashboardStatsSerializer()
     participants = ParticipantStatusSerializer(many=True)
     heatmap = HeatmapSlotSerializer(many=True)
+
+
+class CalendarExportSerializer(serializers.Serializer):
+    """캘린더 내보내기 정보 Serializer"""
+    event_id = serializers.IntegerField()
+    event_title = serializers.CharField()
+    has_final_choice = serializers.BooleanField()
+
+    # 확정된 시간 정보
+    final_start_datetime = serializers.DateTimeField(allow_null=True)
+    final_end_datetime = serializers.DateTimeField(allow_null=True)
+    final_start_datetime_local = serializers.CharField(allow_null=True)
+    final_end_datetime_local = serializers.CharField(allow_null=True)
+
+    # Google Calendar 링크
+    google_calendar_url = serializers.CharField(allow_null=True)
+
+    # .ics 파일 다운로드 URL
+    ics_download_url = serializers.CharField()
+
+    message = serializers.CharField()

@@ -3,7 +3,8 @@ from apps.participants.views import ParticipantCreateView, ParticipantListView
 from .views import (
     EventCreateView, EventDetailView, MyEventListView, EventUpdateView,
     EventSummaryView, FinalChoiceView, SendFinalChoiceEmailView, TimeRecommendationView,
-    EventQRCodeView, EventShareInfoView, EventInviteEmailView, EventDashboardView
+    EventQRCodeView, EventShareInfoView, EventInviteEmailView, EventDashboardView,
+    CalendarExportView, CalendarICSDownloadView
 )
 
 app_name = 'events'
@@ -20,6 +21,8 @@ urlpatterns = [
     path('<int:event_id>/share-info', EventShareInfoView.as_view(), name='share-info'),
     path('<int:event_id>/invite', EventInviteEmailView.as_view(), name='invite'),
     path('<int:event_id>/dashboard', EventDashboardView.as_view(), name='dashboard'),
+    path('<int:event_id>/calendar-export', CalendarExportView.as_view(), name='calendar-export'),
+    path('<int:event_id>/calendar.ics', CalendarICSDownloadView.as_view(), name='calendar-ics'),
     path('<slug:slug>/', EventDetailView.as_view(), name='event-detail'),
     path('<slug:slug>/participants/', ParticipantCreateView.as_view(), name='participant-create'),
     path('<int:event_id>/participants', ParticipantListView.as_view(), name='participant-list'),
