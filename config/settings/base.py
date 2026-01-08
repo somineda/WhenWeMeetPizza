@@ -96,7 +96,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ko-kr'
 TIME_ZONE = 'Asia/Seoul'
 USE_I18N = True
 USE_TZ = True
@@ -124,7 +124,7 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
-    'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
+    'EXCEPTION_HANDLER': 'config.exception_handler.custom_exception_handler',
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
@@ -182,9 +182,11 @@ SPECTACULAR_SETTINGS = {
         'deepLinking': True,
         'persistAuthorization': True,
         'displayOperationId': True,
+        'supportedSubmitMethods': ['get', 'post', 'put', 'delete', 'patch'],
     },
     'SERVERS': [
         {'url': 'http://localhost:8000', 'description': 'Local development server'},
+        {'url': 'http://127.0.0.1:8000', 'description': 'Local development server (127.0.0.1)'},
     ],
     'TAGS': [
         {'name': 'Auth', 'description': 'Authentication endpoints'},
@@ -193,4 +195,14 @@ SPECTACULAR_SETTINGS = {
         {'name': 'Availability', 'description': 'Time availability endpoints'},
         {'name': 'Final Choice', 'description': 'Final time selection endpoints'},
     ],
+    'APPEND_COMPONENTS': {
+        'securitySchemes': {
+            'Bearer': {
+                'type': 'http',
+                'scheme': 'bearer',
+                'bearerFormat': 'JWT',
+            }
+        }
+    },
+    'SECURITY': [{'Bearer': []}],
 }

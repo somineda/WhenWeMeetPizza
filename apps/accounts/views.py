@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from .serializers import UserRegistrationSerializer, UserSerializer, LoginSerializer
 
 
@@ -10,6 +11,12 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=['Auth'],
+        summary='회원가입',
+        description='새로운 사용자를 등록합니다.',
+        auth=[],  # 인증 불필요
+    )
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -31,6 +38,12 @@ class LoginView(generics.GenericAPIView): #로그인뷰
     serializer_class = LoginSerializer
     permission_classes = [AllowAny]
 
+    @extend_schema(
+        tags=['Auth'],
+        summary='로그인',
+        description='이메일과 비밀번호로 로그인하고 JWT 토큰을 발급받습니다.',
+        auth=[],  # 인증 불필요
+    )
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -42,12 +55,12 @@ class LoginView(generics.GenericAPIView): #로그인뷰
 
         if user is None:
             return Response({
-                'detail': 'Invalid credentials'
+                'detail': '잘못된 이메일 또는 비밀번호입니다'
             }, status=status.HTTP_401_UNAUTHORIZED)
 
         if not user.is_active:
             return Response({
-                'detail': 'User account is disabled'
+                'detail': '비활성화된 계정입니다'
             }, status=status.HTTP_403_FORBIDDEN)
 
         #JWT 토큰

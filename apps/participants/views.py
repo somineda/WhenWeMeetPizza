@@ -20,7 +20,7 @@ class ParticipantCreateView(generics.CreateAPIView):
         # nickname 필수 체크
         if 'nickname' not in request.data or not request.data['nickname'].strip():
             return Response({
-                'detail': 'empty_fields'
+                'detail': '닉네임을 입력해주세요'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         nickname = request.data['nickname'].strip()
@@ -29,7 +29,7 @@ class ParticipantCreateView(generics.CreateAPIView):
         # 익명 참가(비로그인) 시 이메일 필수
         if not request.user.is_authenticated and not email:
             return Response({
-                'detail': 'email_required'
+                'detail': '이메일을 입력해주세요'
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # 로그인한 사용자가 이메일과 함께 참가하는 경우
