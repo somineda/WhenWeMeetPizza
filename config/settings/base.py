@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'drf_spectacular',
 
     # Local apps
     'apps.accounts',
@@ -124,6 +125,7 @@ REST_FRAMEWORK = {
         'rest_framework.renderers.JSONRenderer',
     ],
     'EXCEPTION_HANDLER': 'rest_framework.views.exception_handler',
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 # JWT Settings
@@ -167,3 +169,28 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
 ]
+
+# DRF Spectacular (Swagger/OpenAPI)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Pizza Meeting Scheduler API',
+    'DESCRIPTION': 'API documentation for the Pizza Meeting Scheduler - A service for coordinating meeting times',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': r'/api/v[0-9]',
+    'SWAGGER_UI_SETTINGS': {
+        'deepLinking': True,
+        'persistAuthorization': True,
+        'displayOperationId': True,
+    },
+    'SERVERS': [
+        {'url': 'http://localhost:8000', 'description': 'Local development server'},
+    ],
+    'TAGS': [
+        {'name': 'Auth', 'description': 'Authentication endpoints'},
+        {'name': 'Events', 'description': 'Event management endpoints'},
+        {'name': 'Participants', 'description': 'Participant management endpoints'},
+        {'name': 'Availability', 'description': 'Time availability endpoints'},
+        {'name': 'Final Choice', 'description': 'Final time selection endpoints'},
+    ],
+}
