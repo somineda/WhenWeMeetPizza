@@ -28,7 +28,12 @@ export default function TimeSlotSelector({ participant, timeSlots, onSuccess }: 
   useEffect(() => {
     const grouped: GroupedSlots = {};
     timeSlots.forEach((slot) => {
-      const date = slot.start_datetime.split('T')[0];
+      // Handle both API formats: { start_datetime } or { date, start_time }
+      const slotAny = slot as any;
+      const date = slot.start_datetime
+        ? slot.start_datetime.split('T')[0]
+        : slotAny.date;
+
       if (!grouped[date]) {
         grouped[date] = [];
       }
@@ -48,7 +53,7 @@ export default function TimeSlotSelector({ participant, timeSlots, onSuccess }: 
   };
 
   const selectAll = () => {
-    setSelectedSlots(new Set(timeSlots.map((slot) => slot.id)));
+    setSelectedSlots(new Set(timeSlots.map((slot) => (slot.id || (slot as any).slot_id))));
   };
 
   const clearAll = () => {
@@ -63,10 +68,13 @@ export default function TimeSlotSelector({ participant, timeSlots, onSuccess }: 
 
     setIsLoading(true);
     try {
-      const availabilities = timeSlots.map((slot) => ({
-        time_slot_id: slot.id,
-        is_available: selectedSlots.has(slot.id),
-      }));
+      const availabilities = timeSlots.map((slot) => {
+        const slotId = slot.id || (slot as any).slot_id;
+        return {
+          time_slot_id: slotId,
+          is_available: selectedSlots.has(slotId),
+        };
+      });
 
       await participantApi.submitAvailability(participant.id, {
         availabilities,
@@ -128,25 +136,28 @@ export default function TimeSlotSelector({ participant, timeSlots, onSuccess }: 
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                 {slots.map((slot) => {
-                  const isSelected = selectedSlots.has(slot.id);
-                  const startTime = new Date(slot.start_datetime)
-                    .toLocaleTimeString('ko-KR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                    });
-                  const endTime = new Date(slot.end_datetime)
-                    .toLocaleTimeString('ko-KR', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: false,
-                    });
+                  const slotAny = slot as any;
+                  const slotId = slot.id || slotAny.slot_id;
+                  const isSelected = selectedSlots.has(slotId);
+
+                  // Handle both API formats
+                  let startTime: string;
+                  if (slot.start_datetime) {
+                    startTime = new Date(slot.start_datetime)
+                      .toLocaleTimeString('ko-KR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false,
+                      });
+                  } else {
+                    startTime = slotAny.start_time;
+                  }
 
                   return (
                     <button
-                      key={slot.id}
+                      key={slotId}
                       type="button"
-                      onClick={() => toggleSlot(slot.id)}
+                      onClick={() => toggleSlot(slotId)}
                       className={`
                         px-3 py-2 rounded-lg border-2 text-sm font-medium transition
                         ${

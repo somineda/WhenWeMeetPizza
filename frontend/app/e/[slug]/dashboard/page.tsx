@@ -37,7 +37,10 @@ export default function DashboardPage() {
       setEvent(eventData);
 
       // Check permissions
-      const isCreator = isAuthenticated() && user && eventData.created_by === user.id;
+      const isCreator = isAuthenticated() && user && (
+        eventData.created_by === user.id ||
+        (eventData as any).organizer_id === user.id
+      );
       const savedParticipant = getParticipant();
 
       let dashboardData: EventDashboard;
@@ -102,7 +105,10 @@ export default function DashboardPage() {
   };
 
   const isCreator =
-    isAuthenticated() && event && user && event.created_by === user.id;
+    isAuthenticated() && event && user && (
+      event.created_by === user.id ||
+      (event as any).organizer_id === user.id
+    );
 
   if (isLoading) {
     return (

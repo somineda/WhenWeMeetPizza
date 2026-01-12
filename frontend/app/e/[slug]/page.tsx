@@ -37,9 +37,12 @@ export default function EventDetailPage() {
         const savedParticipant = getParticipant();
         if (savedParticipant && savedParticipant.slug === slug) {
           // User already registered for this event
+          setParticipant({
+            id: savedParticipant.id,
+            nickname: savedParticipant.nickname,
+            email: savedParticipant.email,
+          } as Participant);
           setStep('select');
-          // We'll need to create a mock participant object
-          // In a real app, you'd fetch this from the API
         }
       } catch (error) {
         const errorMessage = getErrorMessage(error);
@@ -71,7 +74,10 @@ export default function EventDetailPage() {
     fetchEvent();
   };
 
-  const isCreator = isAuthenticated() && event && user && event.created_by === user.id;
+  const isCreator = isAuthenticated() && event && user && (
+    event.created_by === user.id ||
+    (event as any).organizer_id === user.id
+  );
 
   if (isLoading) {
     return (
@@ -142,10 +148,10 @@ export default function EventDetailPage() {
                   eventSlug={slug}
                   onSuccess={handleParticipantSuccess}
                 />
-              ) : participant && event.time_slots ? (
+              ) : participant && (event.time_slots || (event as any).slots) ? (
                 <TimeSlotSelector
                   participant={participant}
-                  timeSlots={event.time_slots}
+                  timeSlots={event.time_slots || (event as any).slots}
                   onSuccess={handleTimeSlotSuccess}
                 />
               ) : (
