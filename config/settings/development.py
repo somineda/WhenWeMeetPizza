@@ -1,11 +1,12 @@
 from .base import *
+import os
 
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-# Use console email backend for development
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Use email backend from .env (can be console or SMTP)
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 
 # DRF: Add browsable API in development
 REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'] = [

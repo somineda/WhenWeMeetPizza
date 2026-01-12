@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import toast from 'react-hot-toast';
 import { copyToClipboard, formatDate, getShareUrl } from '@/lib/utils';
@@ -16,8 +16,15 @@ import {
   Check,
   QrCode,
   Users,
+  MessageCircle,
 } from 'lucide-react';
 import type { Event } from '@/types';
+
+declare global {
+  interface Window {
+    Kakao: any;
+  }
+}
 
 interface Props {
   event: Event;
@@ -26,7 +33,21 @@ interface Props {
 export default function EventInfo({ event }: Props) {
   const [showQR, setShowQR] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [kakaoReady, setKakaoReady] = useState(false);
   const shareUrl = getShareUrl(event.slug);
+
+  // Initialize Kakao SDK
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Kakao && !window.Kakao.isInitialized()) {
+      const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+      if (kakaoKey) {
+        window.Kakao.init(kakaoKey);
+        setKakaoReady(true);
+      }
+    } else if (window.Kakao?.isInitialized()) {
+      setKakaoReady(true);
+    }
+  }, []);
 
   const handleCopyLink = async () => {
     const success = await copyToClipboard(shareUrl);
@@ -52,6 +73,40 @@ export default function EventInfo({ event }: Props) {
       }
     } else {
       handleCopyLink();
+    }
+  };
+
+  const handleKakaoShare = () => {
+    if (!kakaoReady || !window.Kakao) {
+      toast.error('카카오톡 공유 기능을 사용할 수 없습니다');
+      return;
+    }
+
+    try {
+      window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: event.title,
+          description: event.description || '일정 조율에 참여해주세요!',
+          imageUrl: 'https://via.placeholder.com/300x200?text=Pizza+Scheduler',
+          link: {
+            mobileWebUrl: shareUrl,
+            webUrl: shareUrl,
+          },
+        },
+        buttons: [
+          {
+            title: '일정 참여하기',
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl,
+            },
+          },
+        ],
+      });
+    } catch (error) {
+      console.error('Kakao share error:', error);
+      toast.error('카카오톡 공유 중 오류가 발생했습니다');
     }
   };
 
@@ -179,11 +234,10 @@ export default function EventInfo({ event }: Props) {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="primary"
                 onClick={handleShare}
-                className="flex-1"
               >
                 <Share2 className="w-4 h-4 mr-1" />
                 공유하기
@@ -191,10 +245,19 @@ export default function EventInfo({ event }: Props) {
               <Button
                 variant="outline"
                 onClick={() => setShowQR(!showQR)}
-                className="flex-1"
               >
                 <QrCode className="w-4 h-4 mr-1" />
                 QR 코드
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleKakaoShare}
+                disabled={!kakaoReady}
+                className="col-span-2"
+                style={{ backgroundColor: kakaoReady ? '#FEE500' : undefined, color: kakaoReady ? '#000000' : undefined }}
+              >
+                <MessageCircle className="w-4 h-4 mr-1" />
+                카카오톡으로 공유
               </Button>
             </div>
 

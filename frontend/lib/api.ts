@@ -19,6 +19,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // 10 seconds default timeout
 });
 
 // Request interceptor to add auth token
@@ -105,7 +106,9 @@ export const eventApi = {
   },
 
   sendFinalEmail: async (eventId: number) => {
-    const { data } = await api.post(`/events/${eventId}/final-choice/send-email`);
+    const { data } = await api.post(`/events/${eventId}/final-choice/send-email`, {}, {
+      timeout: 30000, // 30 seconds for email sending
+    });
     return data;
   },
 
