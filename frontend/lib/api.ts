@@ -166,7 +166,7 @@ export const participantApi = {
   },
 
   submitAvailability: async (participantId: number, payload: AvailabilitySubmission) => {
-    const { data } = await api.post(`/participants/${participantId}/availability/`, payload);
+    const { data } = await api.post(`/participants/${participantId}/availabilities/`, payload);
     return data;
   },
 };

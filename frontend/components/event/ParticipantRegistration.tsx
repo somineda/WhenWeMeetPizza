@@ -56,11 +56,18 @@ export default function ParticipantRegistration({ eventSlug, onSuccess }: Props)
   const onSubmit = async (data: ParticipantFormData) => {
     setIsLoading(true);
     try {
-      const participant = await participantApi.create(
+      const response = await participantApi.create(
         eventSlug,
         data.nickname,
         data.email || undefined
       );
+
+      // Map API response to Participant object
+      const participant: Participant = {
+        id: (response as any).participant_id || response.id,
+        nickname: response.nickname,
+        email: response.email,
+      };
 
       // Save participant info for anonymous users
       if (!isAuthenticated()) {

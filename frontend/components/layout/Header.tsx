@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
@@ -8,6 +9,11 @@ import Button from '../ui/Button';
 export default function Header() {
   const router = useRouter();
   const { user, isAuthenticated, clearAuth } = useAuthStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     clearAuth();
@@ -25,7 +31,21 @@ export default function Header() {
         </Link>
 
         <nav className="flex items-center space-x-4">
-          {isAuthenticated() ? (
+          {!mounted ? (
+            // Server-side rendering fallback
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm">
+                  로그인
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button variant="primary" size="sm">
+                  회원가입
+                </Button>
+              </Link>
+            </>
+          ) : isAuthenticated() ? (
             <>
               <span className="text-sm text-gray-600 hidden md:inline">
                 안녕하세요, <strong>{user?.nickname}</strong>님

@@ -76,7 +76,7 @@ export interface ParticipantAvailability {
 }
 
 export interface AvailabilitySubmission {
-  availabilities: ParticipantAvailability[];
+  available_slot_ids: number[];
 }
 
 // Dashboard Types

@@ -68,16 +68,11 @@ export default function TimeSlotSelector({ participant, timeSlots, onSuccess }: 
 
     setIsLoading(true);
     try {
-      const availabilities = timeSlots.map((slot) => {
-        const slotId = slot.id || (slot as any).slot_id;
-        return {
-          time_slot_id: slotId,
-          is_available: selectedSlots.has(slotId),
-        };
-      });
+      // Backend expects only selected slot IDs
+      const available_slot_ids = Array.from(selectedSlots);
 
       await participantApi.submitAvailability(participant.id, {
-        availabilities,
+        available_slot_ids,
       });
 
       toast.success('가능 시간을 제출했습니다! ✅');
