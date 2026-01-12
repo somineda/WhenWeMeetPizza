@@ -205,8 +205,18 @@ class SendFinalChoiceEmailView(generics.GenericAPIView):
             send_final_choice_email.delay(event_id)
         except Exception as e:
             # Celery 연결 실패 시 동기적으로 이메일 발송
-            # 또는 나중에 재시도할 수 있도록 큐에 저장
-            pass
+            try:
+                result = send_final_choice_email(event_id)
+                if not result.get('success'):
+                    return Response(
+                        {"detail": result.get('message', '이메일 발송 실패')},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            except Exception as sync_error:
+                return Response(
+                    {"detail": f"이메일 발송 중 오류: {str(sync_error)}"},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
 
         return Response(
             {"detail": "이메일 전송이 완료되었습니다"},

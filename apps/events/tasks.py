@@ -59,8 +59,11 @@ def send_final_choice_email(event_id):
                 fail_silently=False,
             )
 
-            # 리마인드 이메일 스케줄링
-            schedule_reminder_email(event_id)
+            # 리마인드 이메일 스케줄링 (Celery 사용 가능한 경우만)
+            try:
+                schedule_reminder_email(event_id)
+            except Exception:
+                pass  # 스케줄링 실패는 무시
 
             return {
                 'success': True,
