@@ -37,11 +37,12 @@ export default function MyEventsPage() {
       setIsLoading(true);
       try {
         const response = await eventApi.getMyEvents(page, 10);
-        setEvents(response.results);
-        setHasMore(response.next !== null);
+        setEvents(response.items || []);
+        setHasMore((response.page * response.size) < response.total);
       } catch (error) {
         const errorMessage = getErrorMessage(error);
         toast.error(errorMessage);
+        setEvents([]);
       } finally {
         setIsLoading(false);
       }
@@ -84,7 +85,7 @@ export default function MyEventsPage() {
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
               <p className="mt-4 text-gray-600">로딩 중...</p>
             </div>
-          ) : events.length === 0 ? (
+          ) : !events || events.length === 0 ? (
             <Card>
               <CardBody className="text-center py-12">
                 <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -147,25 +148,29 @@ function EventCard({ event }: { event: Event }) {
             )}
 
             <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
-              <div className="flex items-center space-x-2">
-                <Calendar className="w-4 h-4" />
-                <span>
-                  {formatDate(event.date_start, 'M월 d일')} ~{' '}
-                  {formatDate(event.date_end, 'M월 d일')}
-                </span>
-              </div>
+              {event.date_start && event.date_end && (
+                <div className="flex items-center space-x-2">
+                  <Calendar className="w-4 h-4" />
+                  <span>
+                    {formatDate(event.date_start, 'M월 d일')} ~{' '}
+                    {formatDate(event.date_end, 'M월 d일')}
+                  </span>
+                </div>
+              )}
 
-              <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4" />
-                <span>
-                  {event.time_start} ~ {event.time_end}
-                </span>
-              </div>
+              {event.time_start && event.time_end && (
+                <div className="flex items-center space-x-2">
+                  <Clock className="w-4 h-4" />
+                  <span>
+                    {event.time_start} ~ {event.time_end}
+                  </span>
+                </div>
+              )}
 
-              {event.participants_count !== undefined && (
+              {(event.participants_count !== undefined || (event as any).participant_count !== undefined) && (
                 <div className="flex items-center space-x-2">
                   <Users className="w-4 h-4" />
-                  <span>{event.participants_count}명 참가</span>
+                  <span>{event.participants_count || (event as any).participant_count}명 참가</span>
                 </div>
               )}
             </div>

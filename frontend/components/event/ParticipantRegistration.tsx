@@ -103,23 +103,21 @@ export default function ParticipantRegistration({ eventSlug, onSuccess }: Props)
             label="닉네임"
             type="text"
             placeholder="홍길동"
-            helperText="다른 참가자에게 표시될 이름입니다"
+            helperText={
+              isAuthenticated()
+                ? '다른 참가자에게 표시될 이름입니다 (수정 가능)'
+                : '다른 참가자에게 표시될 이름입니다'
+            }
             error={errors.nickname?.message}
-            disabled={isAuthenticated()}
             {...register('nickname')}
           />
 
           <Input
-            label={isAuthenticated() ? '이메일' : '이메일 (선택)'}
+            label="이메일 (선택)"
             type="email"
             placeholder="example@email.com"
-            helperText={
-              isAuthenticated()
-                ? '회원 이메일이 사용됩니다'
-                : '확정 알림을 받고 싶다면 입력하세요'
-            }
+            helperText="확정 알림을 받고 싶다면 입력하세요"
             error={errors.email?.message}
-            disabled={isAuthenticated()}
             {...register('email')}
           />
 

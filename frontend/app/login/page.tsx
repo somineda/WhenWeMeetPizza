@@ -49,9 +49,9 @@ export default function LoginPage() {
       // Save auth state
       setAuth(
         {
-          id: response.id,
-          email: response.email,
-          nickname: response.nickname,
+          id: response.user.id,
+          email: response.user.email,
+          nickname: response.user.nickname,
         },
         response.tokens.access,
         response.tokens.refresh

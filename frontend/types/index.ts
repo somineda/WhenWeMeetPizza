@@ -6,9 +6,11 @@ export interface User {
 }
 
 export interface AuthResponse {
-  id: number;
-  email: string;
-  nickname: string;
+  user: {
+    id: number;
+    email: string;
+    nickname: string;
+  };
   tokens: {
     access: string;
     refresh: string;
