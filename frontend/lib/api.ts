@@ -49,10 +49,11 @@ api.interceptors.response.use(
 
 // Auth API
 export const authApi = {
-  register: async (email: string, password: string, nickname: string): Promise<AuthResponse> => {
+  register: async (email: string, password: string, password2: string, nickname: string): Promise<AuthResponse> => {
     const { data } = await api.post<AuthResponse>('/auth/register/', {
       email,
       password,
+      password2,
       nickname,
     });
     return data;

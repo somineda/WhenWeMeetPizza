@@ -59,6 +59,7 @@ export default function RegisterPage() {
       const response = await authApi.register(
         data.email,
         data.password,
+        data.confirmPassword,
         data.nickname
       );
 
