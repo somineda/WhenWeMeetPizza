@@ -10,7 +10,7 @@ import { getErrorMessage, formatDate, getShareUrl } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import Header from '@/components/layout/Header';
-import { Calendar, Users, Clock, Plus, ExternalLink } from 'lucide-react';
+import { Calendar, Users, Clock, Plus } from 'lucide-react';
 import type { Event } from '@/types';
 
 export default function MyEventsPage() {
@@ -183,9 +183,8 @@ function EventCard({ event }: { event: Event }) {
           </div>
 
           <div className="flex flex-col gap-2 ml-4">
-            <Link href={`/e/${event.slug}`} target="_blank">
+            <Link href={`/e/${event.slug}`}>
               <Button variant="outline" size="sm">
-                <ExternalLink className="w-4 h-4 mr-1" />
                 보기
               </Button>
             </Link>

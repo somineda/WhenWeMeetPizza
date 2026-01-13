@@ -1,0 +1,14 @@
+[Unit]
+Description=Pizza Scheduler Next.js Frontend
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/pizza/frontend
+Environment="NODE_ENV=production"
+ExecStart=/usr/bin/npm start
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

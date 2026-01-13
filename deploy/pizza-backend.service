@@ -1,0 +1,21 @@
+[Unit]
+Description=Pizza Scheduler Django Backend
+After=network.target
+
+[Service]
+Type=notify
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/pizza
+Environment="PATH=/home/ubuntu/pizza/venv/bin"
+ExecStart=/home/ubuntu/pizza/venv/bin/gunicorn \
+    --config /home/ubuntu/pizza/gunicorn_config.py \
+    config.wsgi:application
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
