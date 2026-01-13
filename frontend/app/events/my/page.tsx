@@ -10,7 +10,7 @@ import { getErrorMessage, formatDate, getShareUrl } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import Header from '@/components/layout/Header';
-import { Calendar, Users, Clock, Plus } from 'lucide-react';
+import { Calendar, Users, Clock, Plus, Trash2 } from 'lucide-react';
 import type { Event } from '@/types';
 
 export default function MyEventsPage() {
@@ -106,7 +106,11 @@ export default function MyEventsPage() {
           ) : (
             <div className="space-y-4">
               {events.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
+                />
               ))}
 
               {/* Pagination */}
@@ -128,8 +132,26 @@ export default function MyEventsPage() {
   );
 }
 
-function EventCard({ event }: { event: Event }) {
-  const shareUrl = getShareUrl(event.slug);
+function EventCard({ event, onDelete }: { event: Event; onDelete: (id: number) => void }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm(`'${event.title}' 이벤트를 삭제하시겠습니까?\n\n삭제된 이벤트는 복구할 수 없습니다.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await eventApi.delete(event.id);
+      toast.success('이벤트가 삭제되었습니다');
+      onDelete(event.id);
+    } catch (error) {
+      const errorMessage = getErrorMessage(error);
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <Card className="hover:shadow-md transition">
@@ -193,6 +215,16 @@ function EventCard({ event }: { event: Event }) {
                 대시보드
               </Button>
             </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              isLoading={isDeleting}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4 mr-1" />
+              삭제
+            </Button>
           </div>
         </div>
       </CardBody>

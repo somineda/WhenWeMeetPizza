@@ -98,6 +98,10 @@ export const eventApi = {
     return data;
   },
 
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/events/${id}/`);
+  },
+
   setFinalChoice: async (eventId: number, slotId: number) => {
     const { data } = await api.post(`/events/${eventId}/final-choice`, {
       slot_id: slotId,
