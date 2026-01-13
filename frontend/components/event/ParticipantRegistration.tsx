@@ -27,6 +27,11 @@ const participantSchema = z.object({
     .email('올바른 이메일 형식이 아닙니다')
     .optional()
     .or(z.literal('')),
+  phone: z
+    .string()
+    .regex(/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/, '올바른 전화번호 형식이 아닙니다')
+    .optional()
+    .or(z.literal('')),
 });
 
 type ParticipantFormData = z.infer<typeof participantSchema>;
@@ -50,6 +55,7 @@ export default function ParticipantRegistration({ eventSlug, onSuccess }: Props)
     defaultValues: {
       nickname: user?.nickname || '',
       email: user?.email || '',
+      phone: '',
     },
   });
 
@@ -59,7 +65,8 @@ export default function ParticipantRegistration({ eventSlug, onSuccess }: Props)
       const response = await participantApi.create(
         eventSlug,
         data.nickname,
-        data.email || undefined
+        data.email || undefined,
+        data.phone || undefined
       );
 
       // Map API response to Participant object
@@ -67,6 +74,7 @@ export default function ParticipantRegistration({ eventSlug, onSuccess }: Props)
         id: (response as any).participant_id || response.id,
         nickname: response.nickname,
         email: response.email,
+        phone: response.phone,
       };
 
       // Save participant info for anonymous users
@@ -126,6 +134,15 @@ export default function ParticipantRegistration({ eventSlug, onSuccess }: Props)
             helperText="확정 알림을 받고 싶다면 입력하세요"
             error={errors.email?.message}
             {...register('email')}
+          />
+
+          <Input
+            label="전화번호 (선택)"
+            type="tel"
+            placeholder="010-1234-5678"
+            helperText="카카오톡 알림을 받고 싶다면 입력하세요"
+            error={errors.phone?.message}
+            {...register('phone')}
           />
 
           <Button

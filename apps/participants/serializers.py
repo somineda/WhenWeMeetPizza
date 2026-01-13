@@ -6,7 +6,7 @@ from apps.events.models import TimeSlot
 class ParticipantListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Participant
-        fields = ['id', 'nickname', 'email', 'created_at', 'updated_at']
+        fields = ['id', 'nickname', 'email', 'phone', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
@@ -16,7 +16,7 @@ class ParticipantSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Participant
-        fields = ['participant_id', 'event_id', 'nickname', 'email', 'created_at']
+        fields = ['participant_id', 'event_id', 'nickname', 'email', 'phone', 'created_at']
         read_only_fields = ['participant_id', 'event_id', 'created_at']
 
     def validate_nickname(self, value):

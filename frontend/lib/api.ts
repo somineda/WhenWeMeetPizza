@@ -155,10 +155,11 @@ export const eventApi = {
 
 // Participant API
 export const participantApi = {
-  create: async (slug: string, nickname: string, email?: string): Promise<Participant> => {
+  create: async (slug: string, nickname: string, email?: string, phone?: string): Promise<Participant> => {
     const { data } = await api.post<Participant>(`/events/${slug}/participants/`, {
       nickname,
       email,
+      phone,
     });
     return data;
   },

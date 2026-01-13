@@ -7,7 +7,7 @@ from django.conf import settings
 from .models import Event, FinalChoice, TimeSlot
 from .serializers import EventSerializer, EventDetailSerializer, MyEventListSerializer, EventUpdateSerializer, EventSummarySerializer, FinalChoiceSerializer
 from .pagination import EventPagination
-from .tasks import send_final_choice_email
+from .tasks import send_final_choice_email, send_final_choice_sms
 
 
 class EventCreateView(generics.CreateAPIView):
@@ -168,9 +168,10 @@ class FinalChoiceView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         final_choice = serializer.save()
 
-        # 자동으로 확정 이메일 발송 (비동기)
+        # 자동으로 확정 알림 발송 (비동기)
         try:
             send_final_choice_email.delay(event_id)
+            send_final_choice_sms.delay(event_id)
         except Exception:
             # Celery 연결 실패 시 무시
             pass

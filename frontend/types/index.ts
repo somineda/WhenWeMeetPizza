@@ -66,6 +66,7 @@ export interface Participant {
   id: number;
   nickname: string;
   email: string;
+  phone?: string;
   is_registered: boolean;
   created_at: string;
 }

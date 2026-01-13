@@ -206,3 +206,11 @@ SPECTACULAR_SETTINGS = {
     },
     'SECURITY': [{'Bearer': []}],
 }
+
+# Kakao Configuration (for sharing)
+KAKAO_REST_API_KEY = os.environ.get('KAKAO_REST_API_KEY', '')
+
+# Solapi SMS Configuration
+SOLAPI_API_KEY = os.environ.get('SOLAPI_API_KEY', '')
+SOLAPI_API_SECRET = os.environ.get('SOLAPI_API_SECRET', '')
+SOLAPI_SENDER_NUMBER = os.environ.get('SOLAPI_SENDER_NUMBER', '')  # 발신번호 (사전 등록 필요)
