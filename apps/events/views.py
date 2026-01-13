@@ -168,13 +168,16 @@ class FinalChoiceView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         final_choice = serializer.save()
 
-        # 자동으로 확정 알림 발송 (비동기)
+        # 자동으로 확정 알림 발송 (동기)
         try:
-            send_final_choice_email.delay(event_id)
-            send_final_choice_sms.delay(event_id)
+            send_final_choice_email(event_id)
         except Exception:
-            # Celery 연결 실패 시 무시
-            pass
+            pass  # 이메일 발송 실패는 무시
+
+        try:
+            send_final_choice_sms(event_id)
+        except Exception:
+            pass  # SMS 발송 실패는 무시
 
         # 응답 데이터 생성 (slot_id 포함)
         response_serializer = self.get_serializer(final_choice)
@@ -201,26 +204,26 @@ class SendFinalChoiceEmailView(generics.GenericAPIView):
         if not FinalChoice.objects.filter(event=event).exists():
             raise ValidationError({"detail": "확정된 시간이 없습니다"})
 
-        # Celery task로 이메일 발송 (비동기)
+        # 이메일 및 SMS 동기 발송
+        email_result = None
+        sms_result = None
+
         try:
-            send_final_choice_email.delay(event_id)
+            email_result = send_final_choice_email(event_id)
         except Exception as e:
-            # Celery 연결 실패 시 동기적으로 이메일 발송
-            try:
-                result = send_final_choice_email(event_id)
-                if not result.get('success'):
-                    return Response(
-                        {"detail": result.get('message', '이메일 발송 실패')},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
-            except Exception as sync_error:
-                return Response(
-                    {"detail": f"이메일 발송 중 오류: {str(sync_error)}"},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+            email_result = {'success': False, 'message': str(e)}
+
+        try:
+            sms_result = send_final_choice_sms(event_id)
+        except Exception as e:
+            sms_result = {'success': False, 'message': str(e)}
 
         return Response(
-            {"detail": "이메일 전송이 완료되었습니다"},
+            {
+                "detail": "알림 전송이 완료되었습니다",
+                "email": email_result,
+                "sms": sms_result
+            },
             status=status.HTTP_200_OK
         )
 
