@@ -8,9 +8,7 @@ from datetime import datetime, timedelta
 
 @shared_task
 def send_final_choice_email(event_id):
-    """
-    확정된 시간을 참가자들에게 이메일로 발송하는 Celery task
-    """
+    # 확정된 시간을 참가자들에게 이메일로 발송하는 Celery task
     try:
         # 이벤트와 확정된 시간 가져오기
         event = Event.objects.get(id=event_id, is_deleted=False)
@@ -25,22 +23,21 @@ def send_final_choice_email(event_id):
         event_url = f"{settings.FRONTEND_URL}/e/{event.slug}"
 
         # 이메일 제목
-        subject = f"[{event.title}] 최종 일정이 확정되었습니다"
+        subject = f"[{event.title}] 최종 일정이 확정되었습니다🍕"
 
         # 이메일 본문
         message = f"""
 안녕하세요,
 
-'{event.title}' 이벤트의 최종 일정이 확정되었습니다.
+'{event.title}' 이벤트의 최종 일정이 확정되었습니다🎉
 
 📅 확정된 일정:
 - 날짜: {local_start.strftime('%Y년 %m월 %d일 (%a)')}
 - 시간: {local_start.strftime('%H:%M')} - {local_end.strftime('%H:%M')}
 
-자세한 내용은 아래 링크에서 확인하실 수 있습니다:
+💌 자세한 내용은 아래 링크에서 확인해주세요
 {event_url}
 
-감사합니다.
         """
 
         # 참가자 이메일 수집
@@ -119,18 +116,15 @@ def send_reminder_email(event_id):
         message = f"""
 안녕하세요,
 
-'{event.title}' 이벤트가 오늘 진행됩니다!
+'{event.title}' 이벤트가 오늘 진행됩니다🎉
 
 📅 일정 리마인드:
 - 날짜: 오늘 ({local_start.strftime('%Y년 %m월 %d일 (%a)')})
 - 시간: {local_start.strftime('%H:%M')} - {local_end.strftime('%H:%M')}
 
-늦지 않도록 준비해주세요! 😊
-
-자세한 내용은 아래 링크에서 확인하실 수 있습니다:
+💘 자세한 내용은 아래 링크에서 확인하실 수 있습니다
 {event_url}
 
-감사합니다.
         """
 
         # 참가자 이메일 수집
@@ -205,12 +199,9 @@ def schedule_reminder_email(event_id):
         # 스케줄링 실패 시 무시
         pass
 
-
+# 확정된 시간을 참가자들에게 SMS로 발송하는 Celery task
 @shared_task
 def send_final_choice_sms(event_id):
-    """
-    확정된 시간을 참가자들에게 SMS로 발송하는 Celery task
-    """
     from .sms_utils import send_sms_batch
 
     try:
@@ -279,12 +270,9 @@ def send_final_choice_sms(event_id):
             'message': f'SMS 발송 중 오류가 발생했습니다: {str(e)}'
         }
 
-
+# 확정된 날짜 당일 오전 7시에 리마인드 SMS를 발송하는 Celery task
 @shared_task
 def send_reminder_sms(event_id):
-    """
-    확정된 날짜 당일 오전 7시에 리마인드 SMS를 발송하는 Celery task
-    """
     from .sms_utils import send_sms_batch
 
     try:
