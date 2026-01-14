@@ -75,6 +75,8 @@ export default function ParticipantRegistration({ eventSlug, onSuccess }: Props)
         nickname: response.nickname,
         email: response.email,
         phone: response.phone,
+        is_registered: true,
+        created_at: new Date().toISOString(),
       };
 
       // Save participant info for anonymous users
