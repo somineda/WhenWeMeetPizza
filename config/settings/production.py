@@ -14,3 +14,12 @@ X_FRAME_OPTIONS = 'DENY'
 
 # Use real email backend
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# CORS for production
+CORS_ALLOWED_ORIGINS = [
+    origin.strip() for origin in
+    os.environ.get('CORS_ALLOWED_ORIGINS', FRONTEND_URL).split(',')
+]
+
+# Celery Beat settings
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'

@@ -1,7 +1,9 @@
 import os
 from celery import Celery
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.development')
+# 환경변수로 설정, 기본값은 development
+django_env = os.environ.get('DJANGO_ENVIRONMENT', 'development')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', f'config.settings.{django_env}')
 
 app = Celery('pizza')
 app.config_from_object('django.conf:settings', namespace='CELERY')

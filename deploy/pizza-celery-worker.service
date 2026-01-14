@@ -1,0 +1,21 @@
+[Unit]
+Description=Pizza Scheduler Celery Worker
+After=network.target redis.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/pizza
+Environment="DJANGO_SETTINGS_MODULE=config.settings.production"
+EnvironmentFile=/home/ubuntu/pizza/.env.production
+ExecStart=/home/ubuntu/pizza/venv/bin/celery -A config worker -l INFO
+Restart=always
+RestartSec=10
+
+# Logging
+StandardOutput=append:/var/log/celery/worker.log
+StandardError=append:/var/log/celery/worker-error.log
+
+[Install]
+WantedBy=multi-user.target
