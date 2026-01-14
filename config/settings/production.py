@@ -20,6 +20,7 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in
     os.environ.get('CORS_ALLOWED_ORIGINS', FRONTEND_URL).split(',')
 ]
+CORS_ALLOW_CREDENTIALS = True
 
 # Celery Beat settings
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'

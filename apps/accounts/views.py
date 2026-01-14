@@ -3,8 +3,34 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
+from django.conf import settings
 from drf_spectacular.utils import extend_schema, OpenApiExample
 from .serializers import UserRegistrationSerializer, UserSerializer, LoginSerializer
+
+
+def set_token_cookies(response, refresh_token, access_token):
+    """httpOnly 쿠키로 토큰 설정"""
+    # Access Token 쿠키 (1시간)
+    response.set_cookie(
+        key='access_token',
+        value=str(access_token),
+        max_age=3600,  # 1시간
+        httponly=True,
+        secure=not settings.DEBUG,  # HTTPS에서만 (production)
+        samesite='Lax',
+        path='/',
+    )
+    # Refresh Token 쿠키 (7일)
+    response.set_cookie(
+        key='refresh_token',
+        value=str(refresh_token),
+        max_age=7 * 24 * 3600,  # 7일
+        httponly=True,
+        secure=not settings.DEBUG,
+        samesite='Lax',
+        path='/',
+    )
+    return response
 
 
 class RegisterView(generics.CreateAPIView):
@@ -25,13 +51,13 @@ class RegisterView(generics.CreateAPIView):
         #jwt 토큰 설정
         refresh = RefreshToken.for_user(user)
 
-        return Response({
+        response = Response({
             'user': UserSerializer(user).data,
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
+            'message': '회원가입이 완료되었습니다.'
         }, status=status.HTTP_201_CREATED)
+
+        # httpOnly 쿠키로 토큰 설정
+        return set_token_cookies(response, refresh, refresh.access_token)
 
 
 class LoginView(generics.GenericAPIView): #로그인뷰
@@ -66,13 +92,28 @@ class LoginView(generics.GenericAPIView): #로그인뷰
         #JWT 토큰
         refresh = RefreshToken.for_user(user)
 
-        return Response({
+        response = Response({
             'user': UserSerializer(user).data,
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
+            'message': '로그인 성공'
         }, status=status.HTTP_200_OK)
+
+        # httpOnly 쿠키로 토큰 설정
+        return set_token_cookies(response, refresh, refresh.access_token)
+
+
+class LogoutView(generics.GenericAPIView):
+    permission_classes = [AllowAny]
+
+    @extend_schema(
+        tags=['Auth'],
+        summary='로그아웃',
+        description='쿠키의 토큰을 삭제합니다.',
+    )
+    def post(self, request, *args, **kwargs):
+        response = Response({'message': '로그아웃 되었습니다.'}, status=status.HTTP_200_OK)
+        response.delete_cookie('access_token', path='/')
+        response.delete_cookie('refresh_token', path='/')
+        return response
 
 
 class UserProfileView(generics.RetrieveUpdateAPIView):

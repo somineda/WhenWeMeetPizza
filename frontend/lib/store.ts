@@ -4,9 +4,7 @@ import type { User } from '@/types';
 
 interface AuthState {
   user: User | null;
-  accessToken: string | null;
-  refreshToken: string | null;
-  setAuth: (user: User, accessToken: string, refreshToken: string) => void;
+  setAuth: (user: User) => void;
   clearAuth: () => void;
   isAuthenticated: () => boolean;
 }
@@ -15,25 +13,15 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
-      setAuth: (user, accessToken, refreshToken) => {
-        set({ user, accessToken, refreshToken });
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('access_token', accessToken);
-          localStorage.setItem('refresh_token', refreshToken);
-        }
+      setAuth: (user) => {
+        set({ user });
       },
       clearAuth: () => {
-        set({ user: null, accessToken: null, refreshToken: null });
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-        }
+        set({ user: null });
       },
       isAuthenticated: () => {
         const state = get();
-        return !!state.accessToken && !!state.user;
+        return !!state.user;
       },
     }),
     {

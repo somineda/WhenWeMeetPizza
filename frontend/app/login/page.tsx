@@ -45,15 +45,11 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const response = await authApi.login(data.email, data.password);
-      setAuth(
-        {
-          id: response.user.id,
-          email: response.user.email,
-          nickname: response.user.nickname,
-        },
-        response.tokens.access,
-        response.tokens.refresh
-      );
+      setAuth({
+        id: response.user.id,
+        email: response.user.email,
+        nickname: response.user.nickname,
+      });
       toast.success('로그인 성공!');
       router.push('/events/my');
     } catch (error) {

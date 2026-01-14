@@ -57,7 +57,6 @@ ssh -i your-key.pem ubuntu@YOUR_EC2_PUBLIC_IP
 ## 3. 서버 초기 설정
 
 ```bash
-# 시스템 업데이트
 sudo apt update && sudo apt upgrade -y
 
 # 필수 패키지 설치

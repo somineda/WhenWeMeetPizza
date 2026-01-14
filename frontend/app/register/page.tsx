@@ -63,15 +63,11 @@ export default function RegisterPage() {
         data.nickname
       );
 
-      setAuth(
-        {
-          id: response.user.id,
-          email: response.user.email,
-          nickname: response.user.nickname,
-        },
-        response.tokens.access,
-        response.tokens.refresh
-      );
+      setAuth({
+        id: response.user.id,
+        email: response.user.email,
+        nickname: response.user.nickname,
+      });
 
       toast.success('회원가입 완료! 환영합니다 🎉');
       router.push('/events/create');

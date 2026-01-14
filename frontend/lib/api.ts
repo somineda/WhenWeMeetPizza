@@ -20,30 +20,14 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
   timeout: 10000, // 10 seconds default timeout
-});
-
-// Request interceptor to add auth token
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
+  withCredentials: true, // httpOnly 쿠키 전송을 위해 필수
 });
 
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      // Unauthorized - clear tokens
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-      }
-    }
+    // 401 에러는 쿠키가 만료되었음을 의미
     return Promise.reject(error);
   }
 );
@@ -65,6 +49,11 @@ export const authApi = {
       email,
       password,
     });
+    return data;
+  },
+
+  logout: async () => {
+    const { data } = await api.post('/auth/logout/');
     return data;
   },
 

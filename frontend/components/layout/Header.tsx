@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/lib/store';
+import { authApi } from '@/lib/api';
 import Button from '../ui/Button';
 import { Menu, X } from 'lucide-react';
 
@@ -25,7 +26,12 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      // 로그아웃 API 실패해도 로컬 상태는 클리어
+    }
     clearAuth();
     router.push('/');
   };
