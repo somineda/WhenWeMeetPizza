@@ -9,16 +9,15 @@ import { z } from 'zod';
 import toast from 'react-hot-toast';
 import { eventApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
-import { getErrorMessage, getShareUrl } from '@/lib/utils';
+import { getErrorMessage } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import Textarea from '@/components/ui/Textarea';
 import Select from '@/components/ui/Select';
-import { Card, CardBody, CardHeader } from '@/components/ui/Card';
+import { Card, CardBody } from '@/components/ui/Card';
 import Header from '@/components/layout/Header';
-import { Calendar, Clock, Globe, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, Globe, ArrowRight, FileText, Lightbulb } from 'lucide-react';
 
-// Timezone options (주요 타임존만)
 const TIMEZONE_OPTIONS = [
   { value: 'Asia/Seoul', label: '한국 (서울)' },
   { value: 'Asia/Tokyo', label: '일본 (도쿄)' },
@@ -32,7 +31,6 @@ const TIMEZONE_OPTIONS = [
   { value: 'UTC', label: 'UTC' },
 ];
 
-// Validation schema
 const eventSchema = z
   .object({
     title: z
@@ -62,7 +60,6 @@ const eventSchema = z
   )
   .refine(
     (data) => {
-      // 같은 날인 경우 시간 검증
       if (data.date_start === data.date_end) {
         const [startHour, startMin] = data.time_start.split(':').map(Number);
         const [endHour, endMin] = data.time_end.split(':').map(Number);
@@ -85,7 +82,6 @@ export default function CreateEventPage() {
   const { isAuthenticated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check authentication
   useEffect(() => {
     if (!isAuthenticated()) {
       toast.error('로그인이 필요합니다');
@@ -93,7 +89,6 @@ export default function CreateEventPage() {
     }
   }, [isAuthenticated, router]);
 
-  // Get today's date for min date
   const today = new Date().toISOString().split('T')[0];
 
   const {
@@ -128,8 +123,6 @@ export default function CreateEventPage() {
       });
 
       toast.success('이벤트가 생성되었습니다! 🎉');
-
-      // Redirect to event detail page
       router.push(`/e/${event.slug}`);
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -140,17 +133,20 @@ export default function CreateEventPage() {
   };
 
   if (!isAuthenticated()) {
-    return null; // Will redirect in useEffect
+    return null;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-warm">
       <Header />
 
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto animate-fade-in">
           {/* Page Header */}
-          <div className="mb-8">
+          <div className="mb-8 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-2xl mb-4">
+              <Calendar className="w-8 h-8 text-primary-600" />
+            </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               새 이벤트 만들기
             </h1>
@@ -160,14 +156,16 @@ export default function CreateEventPage() {
           </div>
 
           {/* Form Card */}
-          <Card>
-            <CardBody>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <Card className="shadow-soft-lg">
+            <CardBody className="p-8">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
                 {/* Basic Information */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 text-primary-600">
-                    <Calendar className="w-5 h-5" />
-                    <h2 className="text-lg font-semibold">기본 정보</h2>
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-primary-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">기본 정보</h2>
                   </div>
 
                   <Input
@@ -189,10 +187,12 @@ export default function CreateEventPage() {
                 </div>
 
                 {/* Date Range */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 text-primary-600">
-                    <Calendar className="w-5 h-5" />
-                    <h2 className="text-lg font-semibold">날짜 범위</h2>
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                      <Calendar className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">날짜 범위</h2>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
@@ -213,19 +213,21 @@ export default function CreateEventPage() {
                     />
                   </div>
 
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-900">
-                      💡 선택한 날짜 범위 동안 30분 단위로 타임슬롯이 자동
-                      생성됩니다
+                  <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl">
+                    <Lightbulb className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-blue-800">
+                      선택한 날짜 범위 동안 30분 단위로 타임슬롯이 자동 생성됩니다
                     </p>
                   </div>
                 </div>
 
                 {/* Time Range */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 text-primary-600">
-                    <Clock className="w-5 h-5" />
-                    <h2 className="text-lg font-semibold">시간 범위</h2>
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                      <Clock className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">시간 범위</h2>
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-4">
@@ -244,18 +246,21 @@ export default function CreateEventPage() {
                     />
                   </div>
 
-                  <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-sm text-blue-900">
-                      💡 매일 이 시간 범위 내에서 타임슬롯이 생성됩니다
+                  <div className="flex items-start gap-3 p-4 bg-emerald-50 rounded-xl">
+                    <Lightbulb className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-sm text-emerald-800">
+                      매일 이 시간 범위 내에서 타임슬롯이 생성됩니다
                     </p>
                   </div>
                 </div>
 
                 {/* Timezone */}
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2 text-primary-600">
-                    <Globe className="w-5 h-5" />
-                    <h2 className="text-lg font-semibold">타임존</h2>
+                <div className="space-y-5">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                      <Globe className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">타임존</h2>
                   </div>
 
                   <Select
@@ -267,26 +272,26 @@ export default function CreateEventPage() {
                 </div>
 
                 {/* Submit Button */}
-                <div className="pt-4 border-t border-gray-200">
-                  <div className="flex gap-3">
+                <div className="pt-6 border-t border-gray-100">
+                  <div className="flex gap-4">
                     <Button
                       type="button"
                       variant="ghost"
                       onClick={() => router.back()}
                       className="flex-1"
+                      size="lg"
                     >
                       취소
                     </Button>
                     <Button
                       type="submit"
-                      variant="primary"
+                      variant="gradient"
                       isLoading={isLoading}
                       className="flex-1"
+                      size="lg"
                     >
-                      <span className="flex items-center justify-center space-x-2">
-                        <span>이벤트 만들기</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </span>
+                      <span>이벤트 만들기</span>
+                      <ArrowRight className="w-5 h-5" />
                     </Button>
                   </div>
                 </div>
@@ -295,15 +300,28 @@ export default function CreateEventPage() {
           </Card>
 
           {/* Help Text */}
-          <div className="mt-6 p-4 bg-gray-100 rounded-lg">
-            <h3 className="font-semibold text-gray-900 mb-2">
+          <div className="mt-8 p-6 bg-white/80 backdrop-blur-sm rounded-2xl shadow-soft">
+            <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="text-xl">📋</span>
               다음 단계는?
             </h3>
-            <ol className="space-y-1 text-sm text-gray-600 list-decimal list-inside">
-              <li>이벤트를 만들면 공유 링크가 생성됩니다</li>
-              <li>링크를 친구들에게 공유하세요</li>
-              <li>친구들이 가능한 시간을 선택합니다</li>
-              <li>대시보드에서 결과를 확인하고 최종 시간을 선택하세요</li>
+            <ol className="space-y-3 text-sm text-gray-600">
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 bg-primary-100 text-primary-700 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">1</span>
+                <span>이벤트를 만들면 공유 링크가 생성됩니다</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 bg-primary-100 text-primary-700 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">2</span>
+                <span>링크를 친구들에게 공유하세요</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 bg-primary-100 text-primary-700 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">3</span>
+                <span>친구들이 가능한 시간을 선택합니다</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="w-6 h-6 bg-primary-100 text-primary-700 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0">4</span>
+                <span>대시보드에서 결과를 확인하고 최종 시간을 선택하세요</span>
+              </li>
             </ol>
           </div>
         </div>

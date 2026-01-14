@@ -13,8 +13,8 @@ import { getErrorMessage } from '@/lib/utils';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
+import { Mail, Lock, User, ShieldCheck } from 'lucide-react';
 
-// Validation schema
 const registerSchema = z
   .object({
     email: z
@@ -63,7 +63,6 @@ export default function RegisterPage() {
         data.nickname
       );
 
-      // Save auth state
       setAuth(
         {
           id: response.user.id,
@@ -75,8 +74,6 @@ export default function RegisterPage() {
       );
 
       toast.success('회원가입 완료! 환영합니다 🎉');
-
-      // Redirect to home or create event page
       router.push('/events/create');
     } catch (error) {
       const errorMessage = getErrorMessage(error);
@@ -87,30 +84,35 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-warm flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Background decorations */}
+      <div className="absolute top-10 right-20 w-72 h-72 bg-amber-200/30 rounded-full blur-3xl" />
+      <div className="absolute bottom-10 left-10 w-96 h-96 bg-primary-200/30 rounded-full blur-3xl" />
+
+      <div className="w-full max-w-md relative animate-fade-in">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center space-x-2">
-            <span className="text-4xl">🍕</span>
+          <Link href="/" className="inline-flex items-center space-x-2 group">
+            <span className="text-5xl group-hover:animate-float transition-transform">🍕</span>
             <span className="text-2xl font-bold text-gray-900">
               Pizza Scheduler
             </span>
           </Link>
-          <p className="mt-2 text-gray-600">새 계정을 만드세요</p>
+          <p className="mt-3 text-gray-600">새 계정을 만드세요</p>
         </div>
 
         {/* Register Form */}
-        <Card>
-          <CardHeader>
+        <Card className="shadow-soft-lg">
+          <CardHeader className="text-center border-b-0 pb-0">
             <h1 className="text-2xl font-bold text-gray-900">회원가입</h1>
           </CardHeader>
-          <CardBody>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <CardBody className="pt-2">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               <Input
                 label="이메일"
                 type="email"
                 placeholder="example@email.com"
+                icon={<Mail className="w-5 h-5" />}
                 error={errors.email?.message}
                 {...register('email')}
               />
@@ -119,6 +121,7 @@ export default function RegisterPage() {
                 label="닉네임"
                 type="text"
                 placeholder="홍길동"
+                icon={<User className="w-5 h-5" />}
                 helperText="다른 사람에게 표시될 이름입니다"
                 error={errors.nickname?.message}
                 {...register('nickname')}
@@ -128,6 +131,7 @@ export default function RegisterPage() {
                 label="비밀번호"
                 type="password"
                 placeholder="••••••••"
+                icon={<Lock className="w-5 h-5" />}
                 helperText="최소 6자 이상"
                 error={errors.password?.message}
                 {...register('password')}
@@ -137,14 +141,16 @@ export default function RegisterPage() {
                 label="비밀번호 확인"
                 type="password"
                 placeholder="••••••••"
+                icon={<ShieldCheck className="w-5 h-5" />}
                 error={errors.confirmPassword?.message}
                 {...register('confirmPassword')}
               />
 
               <Button
                 type="submit"
-                variant="primary"
+                variant="gradient"
                 className="w-full"
+                size="lg"
                 isLoading={isLoading}
               >
                 회원가입
@@ -152,22 +158,22 @@ export default function RegisterPage() {
             </form>
 
             {/* Divider */}
-            <div className="relative my-6">
+            <div className="relative my-8">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
+                <div className="w-full border-t border-gray-200"></div>
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">또는</span>
+                <span className="px-4 bg-white text-gray-500">또는</span>
               </div>
             </div>
 
             {/* Login Link */}
             <div className="text-center">
-              <p className="text-sm text-gray-600">
+              <p className="text-gray-600">
                 이미 계정이 있으신가요?{' '}
                 <Link
                   href="/login"
-                  className="font-semibold text-primary-600 hover:text-primary-700"
+                  className="font-semibold text-primary-600 hover:text-primary-700 underline-offset-4 hover:underline"
                 >
                   로그인
                 </Link>
@@ -175,14 +181,14 @@ export default function RegisterPage() {
             </div>
 
             {/* Privacy Notice */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-600">
+            <div className="mt-8 p-4 bg-gray-50 rounded-xl">
+              <p className="text-xs text-gray-600 text-center leading-relaxed">
                 회원가입을 진행하시면{' '}
-                <a href="#" className="text-primary-600 hover:underline">
+                <a href="#" className="text-primary-600 hover:underline font-medium">
                   이용약관
                 </a>
                 과{' '}
-                <a href="#" className="text-primary-600 hover:underline">
+                <a href="#" className="text-primary-600 hover:underline font-medium">
                   개인정보처리방침
                 </a>
                 에 동의하는 것으로 간주됩니다.
@@ -192,10 +198,10 @@ export default function RegisterPage() {
         </Card>
 
         {/* Back to Home */}
-        <div className="mt-6 text-center">
+        <div className="mt-8 text-center">
           <Link
             href="/"
-            className="text-sm text-gray-600 hover:text-gray-900"
+            className="text-sm text-gray-600 hover:text-primary-600 transition-colors"
           >
             ← 홈으로 돌아가기
           </Link>

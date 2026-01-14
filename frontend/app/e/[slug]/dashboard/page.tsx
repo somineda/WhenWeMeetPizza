@@ -14,7 +14,7 @@ import ParticipantsTable from '@/components/event/ParticipantsTable';
 import HeatmapChart from '@/components/event/HeatmapChart';
 import FinalChoiceSelector from '@/components/event/FinalChoiceSelector';
 import { Card, CardBody } from '@/components/ui/Card';
-import { ArrowLeft, ExternalLink, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ExternalLink, RefreshCw, PartyPopper, Send, Lightbulb } from 'lucide-react';
 import type { EventDashboard, Event } from '@/types';
 
 export default function DashboardPage() {
@@ -28,15 +28,12 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSlotId, setSelectedSlotId] = useState<number | null>(null);
 
-  // Fetch dashboard data
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // First get event to check if user is creator
       const eventData = await eventApi.getBySlug(slug);
       setEvent(eventData);
 
-      // Check permissions
       const isCreator = isAuthenticated() && user && (
         eventData.created_by === user.id ||
         (eventData as any).organizer_id === user.id
@@ -46,17 +43,14 @@ export default function DashboardPage() {
       let dashboardData: EventDashboard;
 
       if (isCreator) {
-        // Creator - use authenticated request
         dashboardData = await eventApi.getDashboard(eventData.id);
       } else if (savedParticipant && savedParticipant.slug === slug) {
-        // Anonymous participant - use participant_id and email
         dashboardData = await eventApi.getDashboard(
           eventData.id,
           savedParticipant.id,
           savedParticipant.email
         );
       } else {
-        // No permission
         toast.error('대시보드에 접근할 권한이 없습니다');
         router.push(`/e/${slug}`);
         return;
@@ -93,9 +87,7 @@ export default function DashboardPage() {
           <div className="font-semibold">가능한 참가자 ({slot.available_count}명)</div>
           <div className="text-sm mt-1">{participants || '없음'}</div>
         </div>,
-        {
-          duration: 4000,
-        }
+        { duration: 4000 }
       );
     }
   };
@@ -112,11 +104,11 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-warm">
         <Header />
         <div className="container mx-auto px-4 py-16 text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-          <p className="mt-4 text-gray-600">대시보드 로딩 중...</p>
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mb-4"></div>
+          <p className="text-gray-600">대시보드 로딩 중...</p>
         </div>
       </div>
     );
@@ -124,15 +116,18 @@ export default function DashboardPage() {
 
   if (!dashboard || !event) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-warm">
         <Header />
         <div className="container mx-auto px-4 py-16 text-center">
+          <div className="w-20 h-20 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <span className="text-4xl">🔒</span>
+          </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             대시보드를 불러올 수 없습니다
           </h1>
-          <p className="text-gray-600 mb-6">권한이 없거나 잘못된 접근입니다</p>
+          <p className="text-gray-600 mb-8">권한이 없거나 잘못된 접근입니다</p>
           <Link href={`/e/${slug}`}>
-            <Button variant="primary">이벤트로 돌아가기</Button>
+            <Button variant="gradient" size="lg">이벤트로 돌아가기</Button>
           </Link>
         </div>
       </div>
@@ -140,18 +135,18 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-warm">
       <Header />
 
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto animate-fade-in">
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+            <div className="flex items-center gap-4">
               <Link href={`/e/${slug}`}>
                 <Button variant="ghost" size="sm">
-                  <ArrowLeft className="w-4 h-4 mr-1" />
-                  이벤트로
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>이벤트로</span>
                 </Button>
               </Link>
               <div>
@@ -162,22 +157,22 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm" onClick={handleRefresh}>
-                <RefreshCw className="w-4 h-4 mr-1" />
-                새로고침
+                <RefreshCw className="w-4 h-4" />
+                <span>새로고침</span>
               </Button>
               <Link href={`/e/${slug}`} target="_blank">
                 <Button variant="outline" size="sm">
-                  <ExternalLink className="w-4 h-4 mr-1" />
-                  이벤트 보기
+                  <ExternalLink className="w-4 h-4" />
+                  <span>이벤트 보기</span>
                 </Button>
               </Link>
             </div>
           </div>
 
           {/* Stats */}
-          <div className="mb-6">
+          <div className="mb-8">
             <DashboardStats stats={dashboard.stats} />
           </div>
 
@@ -190,13 +185,21 @@ export default function DashboardPage() {
 
               {/* Additional Info */}
               {!event.final_choice && dashboard.stats.submission_rate < 100 && (
-                <Card>
-                  <CardBody className="bg-blue-50">
-                    <p className="text-sm text-blue-900">
-                      💡 <strong>아직 {dashboard.stats.pending_participants}명이 시간을 제출하지 않았습니다.</strong>
-                      <br />
-                      제출률이 높을수록 더 정확한 일정 조율이 가능합니다.
-                    </p>
+                <Card className="bg-blue-50 border-blue-100">
+                  <CardBody>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Lightbulb className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-900">
+                          아직 {dashboard.stats.pending_participants}명이 시간을 제출하지 않았습니다
+                        </p>
+                        <p className="text-sm text-blue-700 mt-1">
+                          제출률이 높을수록 더 정확한 일정 조율이 가능합니다
+                        </p>
+                      </div>
+                    </div>
                   </CardBody>
                 </Card>
               )}
@@ -221,14 +224,16 @@ export default function DashboardPage() {
 
               {/* Final Choice Confirmed */}
               {event.final_choice && (
-                <Card>
-                  <CardBody className="bg-green-50 border-2 border-green-200">
-                    <div className="text-center">
-                      <div className="text-4xl mb-2">🎉</div>
-                      <h3 className="text-xl font-bold text-green-900 mb-2">
+                <Card className="overflow-hidden">
+                  <CardBody className="bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-200">
+                    <div className="text-center py-4">
+                      <div className="w-16 h-16 bg-emerald-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <PartyPopper className="w-8 h-8 text-emerald-700" />
+                      </div>
+                      <h3 className="text-xl font-bold text-emerald-900 mb-2">
                         최종 시간이 확정되었습니다!
                       </h3>
-                      <p className="text-green-700 text-lg">
+                      <p className="text-emerald-700 text-lg mb-6">
                         📅{' '}
                         {new Date(
                           event.final_choice.slot.start_datetime
@@ -241,23 +246,22 @@ export default function DashboardPage() {
                         })}
                       </p>
                       {isCreator && (
-                        <div className="mt-4">
-                          <Button
-                            variant="primary"
-                            onClick={async () => {
-                              try {
-                                const response = await eventApi.sendFinalEmail(
-                                  event.id
-                                );
-                                toast.success(response.message);
-                              } catch (error) {
-                                toast.error(getErrorMessage(error));
-                              }
-                            }}
-                          >
-                            확정 알림 이메일 발송
-                          </Button>
-                        </div>
+                        <Button
+                          variant="gradient"
+                          onClick={async () => {
+                            try {
+                              const response = await eventApi.sendFinalEmail(
+                                event.id
+                              );
+                              toast.success(response.message);
+                            } catch (error) {
+                              toast.error(getErrorMessage(error));
+                            }
+                          }}
+                        >
+                          <Send className="w-4 h-4" />
+                          <span>확정 알림 발송</span>
+                        </Button>
                       )}
                     </div>
                   </CardBody>

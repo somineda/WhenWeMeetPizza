@@ -6,11 +6,11 @@ import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { eventApi } from '@/lib/api';
 import { useAuthStore } from '@/lib/store';
-import { getErrorMessage, formatDate, getShareUrl } from '@/lib/utils';
+import { getErrorMessage, formatDate } from '@/lib/utils';
 import Button from '@/components/ui/Button';
-import { Card, CardBody, CardHeader } from '@/components/ui/Card';
+import { Card, CardBody } from '@/components/ui/Card';
 import Header from '@/components/layout/Header';
-import { Calendar, Users, Clock, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Users, Clock, Plus, Trash2, Eye, BarChart3, CheckCircle2 } from 'lucide-react';
 import type { Event } from '@/types';
 
 export default function MyEventsPage() {
@@ -21,7 +21,6 @@ export default function MyEventsPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
-  // Check authentication
   useEffect(() => {
     if (!isAuthenticated()) {
       toast.error('로그인이 필요합니다');
@@ -29,7 +28,6 @@ export default function MyEventsPage() {
     }
   }, [isAuthenticated, router]);
 
-  // Fetch events
   useEffect(() => {
     if (!isAuthenticated()) return;
 
@@ -56,13 +54,13 @@ export default function MyEventsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-warm">
       <Header />
 
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto animate-fade-in">
           {/* Page Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
                 내 이벤트
@@ -72,33 +70,35 @@ export default function MyEventsPage() {
               </p>
             </div>
             <Link href="/events/create">
-              <Button variant="primary">
-                <Plus className="w-4 h-4 mr-2" />
-                새 이벤트
+              <Button variant="gradient" size="lg">
+                <Plus className="w-5 h-5" />
+                <span>새 이벤트</span>
               </Button>
             </Link>
           </div>
 
           {/* Events List */}
           {isLoading ? (
-            <div className="text-center py-12">
-              <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-              <p className="mt-4 text-gray-600">로딩 중...</p>
+            <div className="text-center py-16">
+              <div className="inline-block animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500 mb-4"></div>
+              <p className="text-gray-600">로딩 중...</p>
             </div>
           ) : !events || events.length === 0 ? (
-            <Card>
-              <CardBody className="text-center py-12">
-                <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <Card className="shadow-soft-lg">
+              <CardBody className="text-center py-16">
+                <div className="w-20 h-20 bg-primary-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Calendar className="w-10 h-10 text-primary-500" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
                   아직 이벤트가 없습니다
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-600 mb-8">
                   첫 번째 일정 조율 이벤트를 만들어보세요!
                 </p>
                 <Link href="/events/create">
-                  <Button variant="primary">
-                    <Plus className="w-4 h-4 mr-2" />
-                    이벤트 만들기
+                  <Button variant="gradient" size="lg">
+                    <Plus className="w-5 h-5" />
+                    <span>이벤트 만들기</span>
                   </Button>
                 </Link>
               </CardBody>
@@ -115,9 +115,10 @@ export default function MyEventsPage() {
 
               {/* Pagination */}
               {hasMore && (
-                <div className="text-center pt-4">
+                <div className="text-center pt-6">
                   <Button
                     variant="outline"
+                    size="lg"
                     onClick={() => setPage((p) => p + 1)}
                   >
                     더 보기
@@ -154,12 +155,12 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: number) =
   };
 
   return (
-    <Card className="hover:shadow-md transition">
+    <Card className="shadow-soft hover:shadow-soft-lg transition-all duration-300">
       <CardBody>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div className="flex-1 min-w-0">
             <Link href={`/e/${event.slug}`}>
-              <h3 className="text-xl font-semibold text-gray-900 hover:text-primary-600 transition">
+              <h3 className="text-xl font-bold text-gray-900 hover:text-primary-600 transition-colors truncate">
                 {event.title}
               </h3>
             </Link>
@@ -169,10 +170,10 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: number) =
               </p>
             )}
 
-            <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
+            <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-500">
               {event.date_start && event.date_end && (
-                <div className="flex items-center space-x-2">
-                  <Calendar className="w-4 h-4" />
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-primary-500" />
                   <span>
                     {formatDate(event.date_start, 'M월 d일')} ~{' '}
                     {formatDate(event.date_end, 'M월 d일')}
@@ -181,8 +182,8 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: number) =
               )}
 
               {event.time_start && event.time_end && (
-                <div className="flex items-center space-x-2">
-                  <Clock className="w-4 h-4" />
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-primary-500" />
                   <span>
                     {event.time_start} ~ {event.time_end}
                   </span>
@@ -190,29 +191,32 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: number) =
               )}
 
               {(event.participants_count !== undefined || (event as any).participant_count !== undefined) && (
-                <div className="flex items-center space-x-2">
-                  <Users className="w-4 h-4" />
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary-500" />
                   <span>{event.participants_count || (event as any).participant_count}명 참가</span>
                 </div>
               )}
             </div>
 
             {event.final_choice && (
-              <div className="mt-3 inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                ✅ 최종 시간 확정됨
+              <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium">
+                <CheckCircle2 className="w-4 h-4" />
+                최종 시간 확정됨
               </div>
             )}
           </div>
 
-          <div className="flex flex-col gap-2 ml-4">
+          <div className="flex md:flex-col gap-2 flex-shrink-0">
             <Link href={`/e/${event.slug}`}>
-              <Button variant="outline" size="sm">
-                보기
+              <Button variant="outline" size="sm" className="w-full">
+                <Eye className="w-4 h-4" />
+                <span>보기</span>
               </Button>
             </Link>
             <Link href={`/e/${event.slug}/dashboard`}>
-              <Button variant="ghost" size="sm">
-                대시보드
+              <Button variant="ghost" size="sm" className="w-full">
+                <BarChart3 className="w-4 h-4" />
+                <span>대시보드</span>
               </Button>
             </Link>
             <Button
@@ -220,10 +224,10 @@ function EventCard({ event, onDelete }: { event: Event; onDelete: (id: number) =
               size="sm"
               onClick={handleDelete}
               isLoading={isDeleting}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="text-rose-600 hover:text-rose-700 hover:bg-rose-50"
             >
-              <Trash2 className="w-4 h-4 mr-1" />
-              삭제
+              <Trash2 className="w-4 h-4" />
+              <span>삭제</span>
             </Button>
           </div>
         </div>
