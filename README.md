@@ -275,29 +275,20 @@ const interval = setInterval(() => {
 
 ## 📸 스크린샷
 
-| 메인 페이지 | 이벤트 생성 |
-|------------|------------|
-| ![main](screenshots/main.png) | ![create](screenshots/create.png) |
+### 메인 페이지
+![메인 페이지](/Users/yunsomin/Downloads/pizza/screenshots/스크린샷 2026-01-15 오후 3.33.26.png)
 
-| 시간 선택 | 대시보드 |
-|----------|----------|
-| ![select](screenshots/select.png) | ![dashboard](screenshots/dashboard.png) |
+### 이벤트 생성
+![이벤트 생성](/Users/yunsomin/Downloads/pizza/screenshots/화면 기록 2026-01-15 오후 3.34.43.gif)
 
----
+### 시간 선택
+![시간 선택](/Users/yunsomin/Downloads/pizza/screenshots/화면 기록 2026-01-15 오후 3.45.57.gif)
 
-## 🤝 기여 방법
+### 대시보드
+![대시보드](/Users/yunsomin/Downloads/pizza/screenshots/스크린샷 2026-01-15 오후 3.39.55.png)
 
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📄 라이선스
-
-This project is licensed under the MIT License.
+### 최종 시간 선택
+![최종 시간 선택](/Users/yunsomin/Downloads/pizza/screenshots/화면 기록 2026-01-15 오후 3.40.08.gif)
 
 ---
 
@@ -305,8 +296,4 @@ This project is licensed under the MIT License.
 
 - **소민** - [GitHub](https://github.com/somineda)
 
----
 
-<p align="center">
-  Made with ❤️ and 🍕
-</p>
