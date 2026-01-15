@@ -72,7 +72,7 @@ export default function LoginPage() {
           <Link href="/" className="inline-flex items-center space-x-2 group">
             <span className="text-5xl group-hover:animate-float transition-transform">🍕</span>
             <span className="text-2xl font-bold text-gray-900">
-              피자 팟
+              핏자 팟
             </span>
           </Link>
           <p className="mt-3 text-gray-600">계정에 로그인하세요</p>

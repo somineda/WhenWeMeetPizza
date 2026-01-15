@@ -50,7 +50,7 @@ export default function Header() {
           <Link href="/" className="flex items-center space-x-2 group">
             <span className="text-3xl group-hover:animate-float">🍕</span>
             <span className="text-xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors">
-              피자 팟
+              핏자 팟
             </span>
           </Link>
 
