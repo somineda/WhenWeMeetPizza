@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
-import { Users, CheckCircle, Clock, Mail, User } from 'lucide-react';
+import { Users, CheckCircle, Clock, User } from 'lucide-react';
 import { formatDateTime } from '@/lib/utils';
 import type { ParticipantStatus } from '@/types';
 
@@ -34,9 +34,6 @@ export default function ParticipantsTable({ participants }: Props) {
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">
                   유형
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900 hidden md:table-cell">
-                  이메일
                 </th>
                 <th className="px-4 py-3 text-center text-sm font-semibold text-gray-900">
                   제출 시간
@@ -87,16 +84,6 @@ export default function ParticipantsTable({ participants }: Props) {
                     >
                       {participant.is_registered ? '회원' : '익명'}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 hidden md:table-cell">
-                    {participant.email ? (
-                      <div className="flex items-center space-x-1">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <span>{participant.email}</span>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
                   </td>
                   <td className="px-4 py-3 text-center">
                     {participant.has_submitted ? (
