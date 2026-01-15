@@ -59,7 +59,7 @@ export default function Home() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              왜 <span className="gradient-text">Pizza Scheduler</span>인가요?
+              왜 <span className="gradient-text">피자 팟</span>인가요?
             </h2>
             <p className="text-gray-600 text-lg">
               복잡한 일정 조율을 간단하게 만들어 드립니다
@@ -154,9 +154,9 @@ export default function Home() {
         <div className="container mx-auto px-4 text-center text-gray-600">
           <div className="flex items-center justify-center gap-2 mb-4">
             <span className="text-2xl">🍕</span>
-            <span className="font-semibold text-gray-900">Pizza Scheduler</span>
+            <span className="font-semibold text-gray-900">피자 팟</span>
           </div>
-          <p className="text-sm">© 2026 Pizza Scheduler. All rights reserved.</p>
+          <p className="text-sm">© 2026 피자 팟. All rights reserved.</p>
         </div>
       </footer>
     </div>

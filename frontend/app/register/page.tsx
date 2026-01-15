@@ -91,7 +91,7 @@ export default function RegisterPage() {
           <Link href="/" className="inline-flex items-center space-x-2 group">
             <span className="text-5xl group-hover:animate-float transition-transform">🍕</span>
             <span className="text-2xl font-bold text-gray-900">
-              Pizza Scheduler
+              피자 팟
             </span>
           </Link>
           <p className="mt-3 text-gray-600">새 계정을 만드세요</p>
