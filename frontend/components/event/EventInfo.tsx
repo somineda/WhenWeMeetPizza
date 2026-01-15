@@ -36,17 +36,41 @@ export default function EventInfo({ event }: Props) {
   const [kakaoReady, setKakaoReady] = useState(false);
   const shareUrl = getShareUrl(event.slug);
 
-  // Initialize Kakao SDK
+  // Initialize Kakao SDK (비동기 로드 대기)
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.Kakao && !window.Kakao.isInitialized()) {
-      const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
-      if (kakaoKey) {
-        window.Kakao.init(kakaoKey);
+    const initKakao = () => {
+      if (window.Kakao && !window.Kakao.isInitialized()) {
+        const kakaoKey = process.env.NEXT_PUBLIC_KAKAO_JAVASCRIPT_KEY;
+        if (kakaoKey) {
+          window.Kakao.init(kakaoKey);
+          setKakaoReady(true);
+          return true;
+        }
+      } else if (window.Kakao?.isInitialized()) {
         setKakaoReady(true);
+        return true;
       }
-    } else if (window.Kakao?.isInitialized()) {
-      setKakaoReady(true);
-    }
+      return false;
+    };
+
+    // 즉시 시도
+    if (initKakao()) return;
+
+    // SDK 로드 대기 (최대 5초)
+    const interval = setInterval(() => {
+      if (initKakao()) {
+        clearInterval(interval);
+      }
+    }, 100);
+
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleCopyLink = async () => {
