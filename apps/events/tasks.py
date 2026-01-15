@@ -33,7 +33,7 @@ def send_final_choice_email(event_id):
 
 📅 확정된 일정:
 - 날짜: {local_start.strftime('%Y년 %m월 %d일 (%a)')}
-- 시간: {local_start.strftime('%H:%M')} - {local_end.strftime('%H:%M')}
+- 시간: {local_start.strftime('%H:%M')}
 
 💌 자세한 내용은 아래 링크에서 확인해주세요
 {event_url}
@@ -120,7 +120,7 @@ def send_reminder_email(event_id):
 
 📅 일정 리마인드:
 - 날짜: 오늘 ({local_start.strftime('%Y년 %m월 %d일 (%a)')})
-- 시간: {local_start.strftime('%H:%M')} - {local_end.strftime('%H:%M')}
+- 시간: {local_start.strftime('%H:%M')}
 
 💘 자세한 내용은 아래 링크에서 확인하실 수 있습니다
 {event_url}
@@ -221,7 +221,7 @@ def send_final_choice_sms(event_id):
         message = f"""[{event.title}] 최종 일정 확정
 
 날짜: {local_start.strftime('%m/%d(%a)')}
-시간: {local_start.strftime('%H:%M')}-{local_end.strftime('%H:%M')}
+시간: {local_start.strftime('%H:%M')}
 
 {event_url}"""
 
