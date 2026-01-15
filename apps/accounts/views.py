@@ -10,13 +10,16 @@ from .serializers import UserRegistrationSerializer, UserSerializer, LoginSerial
 
 def set_token_cookies(response, refresh_token, access_token):
     """httpOnly 쿠키로 토큰 설정"""
+    # HTTPS 환경인지 확인 (USE_HTTPS 환경변수 또는 DEBUG 모드)
+    use_secure = getattr(settings, 'USE_HTTPS', False) if not settings.DEBUG else False
+
     # Access Token 쿠키 (1시간)
     response.set_cookie(
         key='access_token',
         value=str(access_token),
         max_age=3600,  # 1시간
         httponly=True,
-        secure=not settings.DEBUG,  # HTTPS에서만 (production)
+        secure=use_secure,
         samesite='Lax',
         path='/',
     )
@@ -26,7 +29,7 @@ def set_token_cookies(response, refresh_token, access_token):
         value=str(refresh_token),
         max_age=7 * 24 * 3600,  # 7일
         httponly=True,
-        secure=not settings.DEBUG,
+        secure=use_secure,
         samesite='Lax',
         path='/',
     )
