@@ -273,22 +273,22 @@ const interval = setInterval(() => {
 
 ---
 
-## 📸 스크린샷
+## 📸 실행 화면
 
 ### 메인 페이지
-![메인 페이지](/Users/yunsomin/Downloads/pizza/screenshots/스크린샷 2026-01-15 오후 3.33.26.png)
+![메인 페이지](screenshots/main.png)
 
 ### 이벤트 생성
-![이벤트 생성](/Users/yunsomin/Downloads/pizza/screenshots/화면 기록 2026-01-15 오후 3.34.43.gif)
+![이벤트 생성](screenshots/create-event.gif)
 
 ### 시간 선택
-![시간 선택](/Users/yunsomin/Downloads/pizza/screenshots/화면 기록 2026-01-15 오후 3.45.57.gif)
+![시간 선택](screenshots/select-time.gif)
 
 ### 대시보드
-![대시보드](/Users/yunsomin/Downloads/pizza/screenshots/스크린샷 2026-01-15 오후 3.39.55.png)
+![대시보드](screenshots/dashboard.png)
 
 ### 최종 시간 선택
-![최종 시간 선택](/Users/yunsomin/Downloads/pizza/screenshots/화면 기록 2026-01-15 오후 3.40.08.gif)
+![최종 시간 선택](screenshots/final-choice.gif)
 
 ---
 
