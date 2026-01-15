@@ -359,3 +359,4 @@ def schedule_reminder_sms(event_id):
     except Exception as e:
         # 스케줄링 실패 시 무시
         pass
+

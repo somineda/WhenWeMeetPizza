@@ -36,6 +36,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
                 : 'border-gray-200 text-gray-900',
               className
             )}
+            style={type === 'password' ? { fontFamily: 'system-ui, -apple-system, sans-serif' } : undefined}
             ref={ref}
             {...props}
           />
